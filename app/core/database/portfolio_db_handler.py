@@ -1,15 +1,12 @@
-import logging
 import json
 
-from entities.portfolio import Portfolio
+from app.core.utils.utils import set_logger
+from app.core.entities.portfolio import Portfolio
 from app.core.app_config import get_config
-from database.queries import INSERT_NEW_PORTFOLIO_TEMPLATE
+from app.core.database.queries import INSERT_NEW_PORTFOLIO_TEMPLATE
 app_config = get_config()
 
-logging.basicConfig(
-    level=logging.INFO,
-    format=app_config.get('logging').get('format'),
-)
+logger = set_logger(name=__name__)
 
 
 def portfolio_already_exists(
@@ -41,7 +38,7 @@ def insert_portfolio_to_db(
     update the database.
     """
     # Extract portfolio data from the Reddit post
-    logging.info(
+    logger.info(
         """Uploading portfolio to DB""" +
         f""" for source id: {portfolio.source_id}""")
     # TODO: Add logic to check if the portfolio already exists
@@ -86,7 +83,7 @@ def insert_portfolio_to_db(
                 final_query, portfolio_data_tuple)
 
         except Exception as e:
-            logging.error(
+            logger.error(
                 f"Error inserting : {e}",
                 exc_info=True
             )

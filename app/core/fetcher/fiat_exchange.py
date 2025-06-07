@@ -2,8 +2,8 @@ import requests
 import logging
 from datetime import date, timedelta
 
-import src.secret_handler as secrets
-from src.app_config import get_config
+import app.core.secret_handler as secrets
+from app.core.app_config import get_config
 
 secret_config = secrets.get_config()
 app_config = get_config()

@@ -1,18 +1,76 @@
+from app.core.utils.utils import set_logger
 import app.core.secret_handler as secrets
 from app.core.services.process_reddit_posts import RedditPostProcessor
+from app.core.services.process_portfolio import PortfolioProcessor
+from app.core.services.process_assets import AssetProcessor
 from app.core.fetcher.reddit import RedditFetcher
+from app.core.fetcher.crypto_currency import CryptoCurrencyFetcher
+from app.core.app_config import get_config
+
+app_config = get_config()
 secret_config = secrets.get_config()
+logger = set_logger(name=__name__)
 
 
 def redditposts_processor_pipeline(
     reddit_ids: list[str],
-    rp_processor: RedditPostProcessor
+    rp_processor: RedditPostProcessor,
+    portfolio_processor: PortfolioProcessor,
+    asset_processor:  AssetProcessor,
+    cc_fetcher: CryptoCurrencyFetcher,
 ):
-    rp_processor.process(
+    reddit_process_results = rp_processor.process(
         reddit_post_ids=reddit_ids
     )
 
+    # Initialize portfolios in the database for each processed Reddit post
+    if not app_config["debug"]["is_debug"]:
+        for result in reddit_process_results:
+            if result["is_portfolio"]:
+                portfolio_processor.initialize_portfolio_in_db(
+                    source="reddit",
+                    source_id=result["source_id"],
+                    created_date=result["created_date"]
+                )
+    for result in reddit_process_results:
+        if result["result"]["is_portfolio"]:
+            init_asset_into_db_pipeline(
+                asset_data=result["result"]["positions"],
+                cc_fetcher=cc_fetcher,
+                asset_processor=asset_processor
+            )
+    logger.info("Initialized portfolios.")
 
+
+def init_asset_into_db_pipeline(
+        asset_data: list[dict],
+        cc_fetcher: CryptoCurrencyFetcher,
+        asset_processor: AssetProcessor
+):
+    """
+    Initialize assets into the database.
+    """
+    for asset in asset_data:
+        cmc_coin_id = cc_fetcher.find_coin_id(
+            name=asset["name"],
+            abbreviation=asset["abbreviation"],
+            provider="coin_market_cap"
+        )
+        gecko_coin_id = cc_fetcher.find_coin_id(
+            name=asset["name"],
+            abbreviation=asset["abbreviation"],
+            provider="coin_gecko"
+        )
+        asset_processor.insert_or_update_asset(
+            name=asset["name"],
+            abbreviation=asset["abbreviation"],
+            provider_coin_id={
+                "coin_market_cap": cmc_coin_id,
+                "coin_gecko": gecko_coin_id
+            }
+        )
+
+    
 def fetch_reddit_posts_from_url_pipeline(
     urls: list[str],
     reddit_fetcher: RedditFetcher

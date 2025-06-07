@@ -1,10 +1,12 @@
-import logging
 from dotenv import load_dotenv
+from typing import Tuple
 import json
 import requests
 import re
 import PIL
 import io
+
+from app.core.utils.utils import set_logger
 from .service_prompts import (
     INTERPRET_IMAGE_FROM_REDDIT_POST,
     IMAGE_PORTFOLIO_REASONING_PROMPT
@@ -25,10 +27,7 @@ secret_config = secrets.get_config()
 load_dotenv()
 app_config = get_config()
 
-logging.basicConfig(
-    level=logging.INFO,
-    format=app_config.get('logging').get('format'),
-)
+logger = set_logger(name=__name__)
 
 
 class RedditPostProcessor:
@@ -70,20 +69,20 @@ class RedditPostProcessor:
 
             # Load the bytes into a PIL Image object
             img = PIL.Image.open(io.BytesIO(image_bytes))
-            logging.info("Image fetched and loaded successfully.")
+            logger.info("Image fetched and loaded successfully.")
             return img
         except requests.exceptions.RequestException as e:
-            logging.error(
+            logger.error(
                 f"Error fetching image from URL: {e}")
         except PIL.UnidentifiedImageError:
-            logging.error(
+            logger.error(
                 """Error: The content at the URL
                 could not be identified as an image.""")
         except ValueError as e:
-            logging.error(
+            logger.error(
                 f"Error: {e}")
         except Exception as e:
-            logging.error(
+            logger.error(
                 f"An unexpected error occurred during image loading: {e}")
 
     def get_info_from_image(
@@ -100,7 +99,7 @@ class RedditPostProcessor:
     def process_image_gallery(
             self,
             image_urls: list[str]
-    ) -> list[dict]:
+    ) -> Tuple[bool, list[dict]]:
         """
         Process a list of image URLs to extract information from each image
         using a vision model. The function retrieves the images from their URLs,
@@ -111,40 +110,47 @@ class RedditPostProcessor:
             list[dict]: A list of dictionaries containing the results and errors
             for each processed image.
         """
-        logging.info(
+        logger.info(
             f"""Processing {len(image_urls)} images""")
+        error = False
+        process_result_dict = {
+            "is_portfolio": False,
+            "positions": [],
+        }
         assets_list = []
         for img_url in image_urls:
-            curr_result_dict = self.process_img_url(
+            error, curr_result_dict = self.process_img_url(
                 image_url=img_url
             )
-            if curr_result_dict.get("error"):
-                logging.error(
+            if error:
+                logger.error(
                     f"Error processing image URL {img_url}:"
                     f"{curr_result_dict.get('error')}"
                 )
-                return {
-                    "error": True,
-                    "result": None
-                }
+                return error, process_result_dict
             else:
-                result = curr_result_dict.get("result")
-                if result["is_portfolio"]:
-                    logging.info(
+                if curr_result_dict["is_portfolio"]:
+                    logger.info(
                         f"""Successfully processed image URL {img_url}""")
                     assets_list.extend(
-                        result["positions"]
+                        curr_result_dict["positions"]
                     )
-        return {
-                    "error": False,
-                    "result": {
-                        "is_portfolio": True,
-                        "positions": assets_list
-                    }
-                }
+        process_result_dict["is_portfolio"] = True if len(assets_list) > 0 else False
+        process_result_dict["positions"] = assets_list
+        return error, process_result_dict
 
-    def process_img_url(self, image_url: str) -> dict:
-        result_dict = {}
+    def process_img_url(
+            self,
+            image_url: str
+    ) -> Tuple[bool, dict]:
+        """
+        Process a single image URL to extract information using a vision model.
+        Args:
+            image_url (str): The URL of the image to process.
+        Returns:
+            Tuple[bool, dict]: A tuple containing a boolean indicating if there
+            was an error and a dictionary with the results or error message.
+        """
         image_type = self.read_image_from_url(image_url)
         vision_response = self.get_info_from_image(
             prompt_text=INTERPRET_IMAGE_FROM_REDDIT_POST,
@@ -155,9 +161,9 @@ class RedditPostProcessor:
         json_process = self.extract_json_from_response(
                 process_output
         )
-        result_dict["error"] = json_process.get("error")
-        result_dict["result"] = json_process.get("result")
-        return result_dict
+        error = json_process.get("error")
+        process_result_dict = json_process.get("result")
+        return error, process_result_dict
 
     def process(
         self,
@@ -175,41 +181,53 @@ class RedditPostProcessor:
             list[dict]: A list of dictionaries containing the results and errors
             for each processed Reddit post.
         """
-        logging.info(
-            f"""Processing {len(reddit_post_ids)}
-            reddit posts""")
-        reddit_post_data = get_reddit_posts(
-            db_interface=self.db_interface,
-            post_ids=reddit_post_ids
-        )
-        process_dicts = []
-        for reddit_post in reddit_post_data:
-            result_dict = {
-                "result": None,
-                "error": False,
-                "source_id": reddit_post.post_id,
-                "created_date": reddit_post.created_date
-            }
-            if reddit_post.is_gallery:
-                result_dict = self.process_image_gallery(
-                    eval(reddit_post.gallery_image_urls)
-                )
-            elif reddit_post.is_direct_image_post and not reddit_post.is_gallery:
-                # If the post is a direct image post, process the image URL
-                img_url = eval(reddit_post.image_post_url)[0]
-                result_dict = self.process_img_url(
-                    image_url=img_url
-                )
-            process_dicts.append(result_dict)
-            update_portfolio_status_in_db(
-                db_interface=self.db_interface,
-                post_id=reddit_post.post_id,
-                is_portfolio=result_dict.get("result").get(
-                    "is_portfolio"),
-                failed=result_dict.get("error"),
-                processed=True
+        if app_config["debug"]["is_debug"]:
+            with open("data/mock/reddit_post_process_results.json", "r") as f:
+                process_result_dicts = json.load(f)
+        else:
+            logger.info(
+                f"""Processing {len(reddit_post_ids)}
+                reddit posts"""
             )
-        return process_dicts
+            reddit_post_data = get_reddit_posts(
+                    db_interface=self.db_interface,
+                    post_ids=reddit_post_ids
+                )
+            process_result_dicts = []
+            for reddit_post in reddit_post_data:
+                result_dict = {
+                    "result": None,
+                    "error": False,
+                    "source_id": reddit_post.post_id,
+                    "created_date": reddit_post.created_date
+                }
+                if reddit_post.is_gallery:
+                    error, img_process_result_dict = self.process_image_gallery(
+                        eval(reddit_post.gallery_image_urls)
+                    )
+                elif reddit_post.is_direct_image_post and not reddit_post.is_gallery:
+                    # If the post is a direct image post, process the image URL
+                    img_url = eval(reddit_post.image_post_url)[0]
+                    error, img_process_result_dict = self.process_img_url(
+                        image_url=img_url
+                    )
+
+                result_dict["error"] = error
+                result_dict["result"] = img_process_result_dict
+                process_result_dicts.append(result_dict)
+
+                update_portfolio_status_in_db(
+                    db_interface=self.db_interface,
+                    post_id=reddit_post.post_id,
+                    is_portfolio=result_dict.get("result").get(
+                        "is_portfolio"),
+                    failed=result_dict.get("error"),
+                    processed=True
+                )
+            with open("data/mock/reddit_post_process_results.json", "w") as f:
+                json.dump(process_result_dicts, f, indent=2)
+
+        return process_result_dicts
 
     @staticmethod
     def extract_json_from_response(raw_response) -> dict:
@@ -218,7 +236,7 @@ class RedditPostProcessor:
         try:
             json_dict = json.loads(raw_response)
         except Exception as e:
-            logging.error(f"""Attempt to load JSON
+            logger.error(f"""Attempt to load JSON
             from raw string failed. Error: {e}""")
             json_dict = None
 
@@ -233,16 +251,16 @@ class RedditPostProcessor:
                 try:
                     json_dict = json.loads(json_string)
                 except json.JSONDecodeError as e:
-                    logging.error(f"Error decoding JSON: {e}")
-                    logging.error(
+                    logger.error(f"Error decoding JSON: {e}")
+                    logger.error(
                         f"Extracted string:\n>>>\n{json_string}\n<<<")
                     is_error = True
                 except Exception as e:
-                    logging.error(f"An unexpected error occurred: {e}")
+                    logger.error(f"An unexpected error occurred: {e}")
                     is_error = True
             else:
                 match = None
-                logging.error(
+                logger.error(
                     """Could not find JSON block within
                     ``` fences using regex.""")
         result_dict = {

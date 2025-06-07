@@ -1,16 +1,11 @@
-import logging
-
-from entities.portfolio import Portfolio
-from src.app_config import get_config
-from database.queries import (
+from app.core.utils.utils import set_logger
+from app.core.app_config import get_config
+from app.core.database.queries import (
     INSERT_CRYPTO_CURRENCY_PRICE_TEMPLATE
 )
-app_config = get_config()
 
-logging.basicConfig(
-    level=logging.INFO,
-    format=app_config.get('logging').get('format'),
-)
+app_config = get_config()
+logger = set_logger(name=__name__)
 
 PRICE_TABLE_NAME_KEY = "crypto_currency_prices"
 COIN_ASSET_TABLE_NAME_KEY = "crypto_assets"
@@ -22,7 +17,7 @@ def crypto_currency_is_tracked_in_db(
         abbreviation: str
 ):
     """
-    Check if the crypto currency price already exists in the database.
+    Check if the crypto currency already exists in the database.
     """
     sql_query = f"""
         SELECT * FROM {
@@ -106,7 +101,7 @@ def insert_crypto_currency_price_to_db(
     update the database.
     """
     # Extract portfolio data from the Reddit post
-    logging.info(
+    logger.info(
         f"""Uploading {abbreviation} price to DB"""
     )
     processed_finished = False
@@ -127,7 +122,7 @@ def insert_crypto_currency_price_to_db(
                     final_query, portfolio_data_tuple)
         processed_finished = True
     except Exception as e:
-        logging.error(
+        logger.error(
             f"""Error inserting {abbreviation} price to DB: {e}"""
         )
     return processed_finished

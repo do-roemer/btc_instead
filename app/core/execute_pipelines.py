@@ -1,7 +1,10 @@
 from app.core.database.db_interface import DatabaseInterface
 import app.core.secret_handler as secrets
 from app.core.services.process_reddit_posts import RedditPostProcessor
+from app.core.services.process_assets import AssetProcessor
 from app.core.fetcher.reddit import RedditFetcher
+from app.core.services.process_portfolio import PortfolioProcessor
+from app.core.fetcher.crypto_currency import CryptoCurrencyFetcher
 from app.core.pipelines.local_pipelines import (
     redditposts_processor_pipeline,
     fetch_reddit_posts_from_url_pipeline
@@ -19,6 +22,16 @@ rp_processor = RedditPostProcessor(
         db_interface=db_interface
 )
 
+portfolio_processor = PortfolioProcessor(
+        db_interface=db_interface
+)
+
+cc_fetcher = CryptoCurrencyFetcher()
+
+asset_processor = AssetProcessor(
+        db_interface=db_interface
+)
+
 reddit_fetcher = RedditFetcher(
                 client_id=secret_config.get("REDDIT_CLIENT_ID"),
                 client_secret=secret_config.get("REDDIT_CLIENT_SECRET"),
@@ -29,6 +42,9 @@ reddit_fetcher = RedditFetcher(
 
 redditposts_processor_pipeline(
     rp_processor=rp_processor,
+    portfolio_processor=portfolio_processor,
+    cc_fetcher=cc_fetcher,
+    asset_processor=asset_processor,
     reddit_ids=[
         "1l1smbv",
         "1i9txgu"      

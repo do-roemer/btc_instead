@@ -1,17 +1,17 @@
-import logging
 from dotenv import load_dotenv
 
-from fetcher.fiat_exchange import (
+from app.core.utils.utils import set_logger
+from app.core.fetcher.fiat_exchange import (
     get_historical_exchange_rate_for_usd
 )
 import app.core.secret_handler as secrets
 from app.core.app_config import get_config
-from entities.portfolio import (
+from app.core.entities.portfolio import (
     Portfolio,
     Purchase
 )
-from database.db_interface import DatabaseInterface
-from database.portfolio_db_handler import (
+from app.core.database.db_interface import DatabaseInterface
+from app.core.database.portfolio_db_handler import (
     insert_portfolio_to_db
 )
 secret_config = secrets.get_config()
@@ -19,10 +19,7 @@ secret_config = secrets.get_config()
 load_dotenv()
 app_config = get_config()
 
-logging.basicConfig(
-    level=logging.INFO,
-    format=app_config.get('logging').get('format'),
-)
+logger = set_logger(name=__name__)
 
 
 class PortfolioProcessor:

@@ -1,19 +1,15 @@
 import requests
-from requests import Request, Session
-import logging
+from requests import Session
 import pandas as pd
-from datetime import datetime, timedelta
-import time
+from datetime import datetime
 import json
 
-from src.app_config import get_config
+from app.core.utils.utils import set_logger
+from app.core.app_config import get_config
+
+logger = set_logger(name=__name__)
 
 app_config = get_config()
-
-logging.basicConfig(
-    level=logging.INFO,
-    format=app_config.get('logging').get('format'),
-)
 
 
 class CryptoCurrencyFetcher():
@@ -27,7 +23,7 @@ class CryptoCurrencyFetcher():
                     "localization": {localization},
                     "date": "{date}"
                 }}""",
-                "mapping_file": "coingecko_capping.csv"
+                "mapping_file": "coingecko_mapping.csv"
             },
             "coin_market_cap": {
                 "url": 'https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest',#"https://pro-api.coinmarketcap.com/v2/cryptocurrency/quotes/latest",
@@ -64,14 +60,14 @@ class CryptoCurrencyFetcher():
             try:
                 coin_id = coin_match["id"].iloc[0]
             except IndexError:
-                logging.warning(
+                logger.warning(
                     f"Warning: Coin ID for {name} ({abbreviation}) not found in mapping file.")
                 coin_id = None
         elif provider == "coin_market_cap":
             try:
                 coin_id = coin_match["slug"].iloc[0]
             except IndexError:
-                logging.warning(
+                logger.warning(
                     f"Warning: Coin ID for {name} ({abbreviation}) not found in mapping file.")
                 coin_id = None
         return coin_id
@@ -107,13 +103,13 @@ class CryptoCurrencyFetcher():
             except KeyError:
                 price = coin_data["quote"].iloc[0][vs_currency]["price"]
         except requests.exceptions.RequestException as e:
-            logging.error(f"Error fetching data from CoinMarketCap: {e}")
+            logger.error(f"Error fetching data from CoinMarketCap: {e}")
             price = None
         except KeyError as e:
-            logging.error(f"Key error: {e}")
+            logger.error(f"Key error: {e}")
             price = None
         except Exception as e:
-            logging.error(f"Unexpected error: {e}")
+            logger.error(f"Unexpected error: {e}")
             price = None
         return price
 
@@ -162,11 +158,11 @@ class CryptoCurrencyFetcher():
                 if vs_currency.lower() in data['market_data']['current_price']:
                     price = data['market_data']['current_price'][vs_currency.lower()]
             else:
-                logging.warning(
+                logger.warning(
                     f"Warning: No market data found for {coin_id} on {date_str}.")
                 price = None
         except requests.exceptions.RequestException as e:
-            logging.error(f"Error fetching data from CoinGecko: {e}")
+            logger.error(f"Error fetching data from CoinGecko: {e}")
             price = None
         return price
 
