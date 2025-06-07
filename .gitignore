@@ -1,0 +1,15 @@
+.env
+.venv/
+venv/
+*/__pycache__
+__pycache__/
+.pytest_cache/
+.vscode/
+*.zip
+*/*.zip
+*.log
+sql_queries.sql
+bash_commands/
+docker_commands.txt
+bash_scripts_local/
+logs/
