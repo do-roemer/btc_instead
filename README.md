@@ -51,6 +51,7 @@ This project was built with the following technologies:
 *   **Data Source:**
     *   [Reddit](https://www.reddit.com/)
     *   [Coingecko](https://www.coingecko.com/en/api)
+    *   [Coin Market Cap](https://coinmarketcap.com/)
 *   **Deployment:**
     *   [Docker](https://www.docker.com/)
     *   [DigitalOcean](https://www.digitalocean.com/?utm_medium=affiliates&utm_source=impact&utm_campaign=5843390&utm_content=&irgwc=1&irclickid=26qU8X2M3xycUKKQFXWM90G3UksR9myKHS-MSA0&gad_source=1&gad_campaignid=21599698028&gbraid=0AAAAA9nmATaLXItjrn6VOE-5tHVqB6d9s&gclid=Cj0KCQjwxo_CBhDbARIsADWpDH4-WlE2SLXl7F8N4tatOB1JLCnyI6nOvNTOZGCQbvhIl1WnTGcpkQoaAlWUEALw_wcB)
