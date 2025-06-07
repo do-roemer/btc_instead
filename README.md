@@ -38,7 +38,11 @@ to enhance my skills in deploying apps in docker, providing APIs, use GenAI in a
 
 **BTC Instead** is (will be) a [web app] that takes (crypto) portfolios shared on subreddits and makes the comparison if the person would have just BTC instead.
 
-I'm interested in Bitcoin and Bitcoin only and for me Crypto (all the other coins) and Bitcoin are two different things. When I go through reddit I see so much scam and hope of gettign rich soon by just buying tokens from a bunch of non-sense projects where only the owners of the project will benefit from. I tend to go into discussions and that's where I came up with the idea of just letting the people know how their portfolio would look like today, if they would just have bought Bitcoin.
+I'm interested in Bitcoin and Bitcoin only and for me Crypto (all the other coins) and Bitcoin are two different things. When I scroll through reddit I see so much scam and hope of getting rich soon by just buying tokens from a bunch of non-sense projects where only the owners of the project will benefit from. I tend to go into discussions and that's where I came up with the idea of just letting the people know how their portfolio would look like today, if they bought **Bitcoin instead**.
+
+I use the Google Gemini LLM and ProVision model to process images posted on reddit. Basically, I let the vision model get the text out of the image and let it decide if it is a portfolio or not. If yes, the LLM takes the text and pus it into a JSON format to be further processed by the application.
+In the uture I would also liek to use the LLM to interpret the sentiment of comments and get more stats.
+
 But again, this is my personal project and point of view and I put my freetime into this project bcs. I want to learn something.  
 
 
@@ -48,6 +52,8 @@ This project was built with the following technologies:
 *   **Backend:**
     *   Python
     *   SQL
+    *   Google Gemini
+    *   Docker
 *   **Data Source:**
     *   [Reddit](https://www.reddit.com/)
     *   [Coingecko](https://www.coingecko.com/en/api)
