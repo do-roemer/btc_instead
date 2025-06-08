@@ -1,10 +1,16 @@
+import json
+
 from app.core.utils.utils import set_logger
 import app.core.secret_handler as secrets
 from app.core.services.process_reddit_posts import RedditPostProcessor
 from app.core.services.process_portfolio import PortfolioProcessor
-from app.core.services.process_assets import AssetProcessor
+from app.core.services.process_asset import AssetProcessor
 from app.core.fetcher.reddit import RedditFetcher
+from app.core.database.db_interface import DatabaseInterface
 from app.core.fetcher.crypto_currency import CryptoCurrencyFetcher
+from app.core.database.asset_db_handler import (
+    get_tracked_crypto_currency_in_db
+)
 from app.core.app_config import get_config
 
 app_config = get_config()
@@ -42,6 +48,16 @@ def redditposts_processor_pipeline(
     logger.info("Initialized portfolios.")
 
 
+def upload_portfolio_purchases_to_db_pipeline(
+        portfolio_processor: PortfolioProcessor,
+        purchases: dict = None,
+):
+    with open("data/mock/reddit_post_process_results.json", "r") as f:
+        process_result_dicts = json.load(f)
+    
+    print("end")
+
+
 def init_asset_into_db_pipeline(
         asset_data: list[dict],
         cc_fetcher: CryptoCurrencyFetcher,
@@ -70,7 +86,37 @@ def init_asset_into_db_pipeline(
             }
         )
 
-    
+
+def fetch_and_upload_weeklsy_crypto_prices_to_db_pipeline(
+    db_interface: DatabaseInterface,
+    asset_processor: AssetProcessor
+):
+    """
+    Fetch and upload weekly crypto prices to the database.
+    """
+    logger.info("Fetching weekly crypto prices.")
+    tracked_ccs = get_tracked_crypto_currency_in_db(
+        db_interface=db_interface
+    )
+    failed_assets = []
+    if not tracked_ccs:
+        logger.warning("No tracked crypto currencies found in the database.")
+        return
+    else:
+        for coin_data in tracked_ccs:
+            asset_processed = asset_processor.process_asset(
+                name=coin_data["name"],
+                abbreviation=coin_data["abbreviation"]
+            )
+            if not asset_processed:
+                failed_assets.append(coin_data["abbreviation"])
+    if len(failed_assets) > 0:
+        logger.warning(
+            f"Failed to process the following assets: {failed_assets}"
+        )            
+    logger.info("Uploaded weekly crypto prices to the database.")
+
+
 def fetch_reddit_posts_from_url_pipeline(
     urls: list[str],
     reddit_fetcher: RedditFetcher

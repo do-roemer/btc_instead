@@ -6,7 +6,7 @@ config = app_config.get_config()
 
 def set_logger(name):
     logging.basicConfig(
-        level=logging.DEBUG if config["debug"]["is_debug"] else logging.INFO,
+        level=logging.DEBUG if config["debug"]["print_debug"] else logging.INFO,
         format=config["logging"]["format"],
         handlers=[
             logging.StreamHandler()

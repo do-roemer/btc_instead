@@ -39,7 +39,7 @@ def track_crypto_currency_in_db(
         provider_coin_id: dict
 ):
     """
-    Track the crypto currency in the database.
+    Track the crypto currency in formation in the database (table:CCAssets).
     """
     sql_query = f"""
         INSERT INTO {
@@ -63,13 +63,52 @@ def track_crypto_currency_in_db(
     return result
 
 
+def get_tracked_crypto_currency_in_db(
+        db_interface,
+        num_assets_limit: int = None
+) -> list[dict]:
+    """
+    Get all tracked crypto currencies from the database.
+    If num_assets_limit is provided, limit the number of assets returned.
+    Input:
+        db_interface: Database interface to execute queries.
+        num_assets_limit: Optional limit on the number of assets to return.
+    Output:
+        A list of dictionaries containing the tracked crypto currencies.
+        Each dictionary contains:
+            - name: Name of the crypto currency
+            - abbreviation: Abbreviation of the crypto currency
+            - coin_market_cap: CoinMarketCap ID
+            - coin_gecko: CoinGecko ID
+    """
+    sql_query = f"""
+        SELECT * FROM {
+            db_interface.tables[COIN_ASSET_TABLE_NAME_KEY].name
+            }
+    """
+    if num_assets_limit:
+        sql_query += f" LIMIT {num_assets_limit}"
+    sql_query += ";"
+
+    result = db_interface.execute_query(sql_query)
+    return [
+        {
+            "name": row[1],
+            "abbreviation": row[2],
+            "coin_market_cap": row[3],
+            "coin_gecko": row[4]
+        } for row in result
+    ]
+
+
 def get_coin_ids_for_providers(
         db_interface,
         name: str,
         abbreviation: str
 ) -> dict:
     """
-    Get the coin ids for the providers.
+    Get the coin ids for the providers to store it in the DB (table:CCAssets).
+    The ID is used to get the price from the API.
     """
     sql_query = f"""
         SELECT coin_gecko_id, cmc_id FROM `{
@@ -87,14 +126,18 @@ def get_coin_ids_for_providers(
     return {
         "coin_market_cap": cmc_id,
         "coin_gecko": coin_gecko_id
-    } 
+    }
 
 
 def insert_crypto_currency_price_to_db(
         db_interface,
+        name: str,
         abbreviation: str,
         price: float,
         date: str,
+        iso_week: int,
+        iso_year: int,
+        currency: str = "usd"
 ):
     """
     Process the portfolio data from the Reddit post and
@@ -107,9 +150,13 @@ def insert_crypto_currency_price_to_db(
     processed_finished = False
     try:
         portfolio_data_tuple = (
+            name.lower(),
             abbreviation.lower(),
             price,
-            date
+            currency.lower(),
+            date,
+            iso_week,
+            iso_year
         )
 
         final_query = INSERT_CRYPTO_CURRENCY_PRICE_TEMPLATE.format(
@@ -121,8 +168,12 @@ def insert_crypto_currency_price_to_db(
         _ = db_interface.execute_query(
                     final_query, portfolio_data_tuple)
         processed_finished = True
+        logger.debug(
+            f"""Inserted {abbreviation} price to DB: {price} on {date}"""
+        )
     except Exception as e:
         logger.error(
             f"""Error inserting {abbreviation} price to DB: {e}"""
         )
+    
     return processed_finished

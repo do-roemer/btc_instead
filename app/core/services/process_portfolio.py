@@ -15,10 +15,7 @@ from app.core.database.portfolio_db_handler import (
     insert_portfolio_to_db
 )
 secret_config = secrets.get_config()
-
-load_dotenv()
 app_config = get_config()
-
 logger = set_logger(name=__name__)
 
 
@@ -64,6 +61,14 @@ class PortfolioProcessor:
             is_new=True
         )
 
+    def purchase_to_db(
+        portfolio,
+        purchase  
+    ):
+        pass
+
+    
+        
     def create_purchase(
         self,
         source: str,
@@ -79,14 +84,14 @@ class PortfolioProcessor:
         Create an purchase object.
         """
         purchase_date = purchase_date.split("T")[0]
-        if currency != "USD":
+        if currency not in ["USD", "usd"]:
             # Get the exchange rate for the purchase date
             exchange_rate = get_historical_exchange_rate_for_usd(
                 date_str=purchase_date,
                 base_currency=currency
             )
             if exchange_rate is None:
-                logging.error(
+                logger.error(
                     f"Error: Could not fetch exchange rate "
                     f"""for {currency} on {purchase_date}."""
                     f" Using 1.0 as a fallback."

@@ -1,5 +1,7 @@
 import json
 
+
+from app.core.database.db_interface import DatabaseInterface
 from app.core.utils.utils import set_logger
 from app.core.entities.portfolio import Portfolio
 from app.core.app_config import get_config
@@ -27,9 +29,21 @@ def portfolio_already_exists(
     )
     return len(result) > 0
 
+def purchase_to_db(
+        db_interface: DatabaseInterface,
+        source: str,
+        source_id: str,
+        name: str,
+        abbreviation: str,
+        amount: float,
+        purchase_price_per_unit: float,
+        purchase_date: str,
+        total_purchase_value: float
+):
+    
 
 def insert_portfolio_to_db(
-        db_interface,
+        db_interface: DatabaseInterface,
         portfolio: Portfolio,
         is_new: bool = True
 ):

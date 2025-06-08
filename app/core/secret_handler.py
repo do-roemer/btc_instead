@@ -23,6 +23,7 @@ REQUIRED_SECRETS = [
     'SSH_TUNNEL_PORT',
     'DROPLET_SSH_HOST',
     'DROPLET_SSH_USER',
+    'COINMARKETCAP_API_KEY'
 ]
 
 _cached_config = None 

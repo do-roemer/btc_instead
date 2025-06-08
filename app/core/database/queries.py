@@ -56,10 +56,30 @@ INSERT_NEW_PORTFOLIO_TEMPLATE = """
 
 INSERT_CRYPTO_CURRENCY_PRICE_TEMPLATE = """
         INSERT INTO {table_name} (
-            abbreviation, price, date
-        ) VALUES (%s, %s, %s)
+            name, abbreviation, price, currency, date, iso_week, iso_year
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s)
         ON DUPLICATE KEY UPDATE
+            name = VALUES(name),
             abbreviation = VALUES(abbreviation),
             price = VALUES(price),
-            date = VALUES(date)
+            currency = VALUES(currency),
+            date = VALUES(date),
+            iso_week = VALUES(iso_week),
+            iso_year = VALUES(iso_year)
         """
+
+INSERT_NEW_PURCHASE_TEMPLATE = """
+    INSERT INTO {table_name} (
+        source, source_id, name, abbreviation, amount, purchase_price_per_unit
+        purchase_date, total_purchase_value
+    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+    ON DUPLICATE KEY UPDATE
+        source = VALUES(),
+        = VALUES(),
+        = VALUES(),
+        = VALUES(),
+        = VALUES(),
+        = VALUES(),
+        = VALUES(),
+        = VALUES(),
+"""

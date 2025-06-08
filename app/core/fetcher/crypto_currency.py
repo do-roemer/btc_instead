@@ -6,9 +6,10 @@ import json
 
 from app.core.utils.utils import set_logger
 from app.core.app_config import get_config
+import app.core.secret_handler as secrets
 
+secret_config = secrets.get_config()
 logger = set_logger(name=__name__)
-
 app_config = get_config()
 
 
@@ -84,7 +85,8 @@ class CryptoCurrencyFetcher():
         params['convert'] = vs_currency.upper()
 
         headers = self.request_info["coin_market_cap"]["headers"]
-        headers["X-CMC_PRO_API_KEY"] = app_config.get("cmc_api").get("key")
+        headers["X-CMC_PRO_API_KEY"] = \
+            secret_config.get("COINMARKETCAP_API_KEY")
         try:
             session = Session()
             session.headers.update(headers)
@@ -166,12 +168,26 @@ class CryptoCurrencyFetcher():
             price = None
         return price
 
-    def fetch_current_week_data(
+    def fetch_current_weeks_coin_price(
         self,
         coin_ids: dict,
         vs_currency='usd'
     ) -> dict:
-
+        """
+        Fetches the current week's price for a cryptocurrency from CoinGecko or CoinMarketCap.
+        Args:
+            coin_ids (dict): A dictionary containing the CoinGecko and CoinMarketCap IDs of the cryptocurrency.
+                             Example: {"coin_gecko": "bitcoin", "coin_market_cap": "bitcoin"}
+            vs_currency (str): The currency to get the price in (default is 'usd').
+        Returns:
+            dict: A dictionary containing the price, date, and error status.
+                  Example: {
+                      "price": 50000.0,
+                      "date": "2023-10-01",
+                      "is_error": False,
+                      "error_message": None
+                  }
+        """
         result_dict = {
             "price": None,
             "date": None,

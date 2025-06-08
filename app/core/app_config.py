@@ -19,7 +19,8 @@ MYSQL_TABLES = {
     }
 
 DEBUG = {
-    'is_debug': True
+    'is_debug': True,
+    'print_debug': False
 }
 
 REDDIT_FETCHER_CONFIG = {
