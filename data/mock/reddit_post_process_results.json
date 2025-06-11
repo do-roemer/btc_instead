@@ -170,22 +170,22 @@
         {
           "name": "SolCex",
           "abbreviation": "SOLCEX",
-          "amount": "577.79K",
-          "price": "$2,619.80",
+          "amount": 577790.0,
+          "price": 2619.8,
           "currency": "USD"
         },
         {
           "name": "SolCard",
           "abbreviation": "SOLC",
-          "amount": "56,685.53248",
-          "price": "$1,972.36",
+          "amount": 56685.53248,
+          "price": 1972.36,
           "currency": "USD"
         },
         {
           "name": "GameStop",
           "abbreviation": "GME",
-          "amount": "435.51K",
-          "price": "$858.49",
+          "amount": 435510.0,
+          "price": 858.49,
           "currency": "USD"
         }
       ]

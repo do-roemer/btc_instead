@@ -40,7 +40,7 @@ def purchase_to_db(
         purchase_date: str,
         total_purchase_value: float
 ):
-    
+    pass
 
 def insert_portfolio_to_db(
         db_interface: DatabaseInterface,

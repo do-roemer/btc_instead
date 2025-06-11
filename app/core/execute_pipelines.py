@@ -41,17 +41,17 @@ reddit_fetcher = RedditFetcher(
                 password=secret_config.get("REDDIT_PASSWORD")
             )
 
-upload_portfolio_purchases_to_db_pipeline(
-    portfolio_processor
-)
-
-#redditposts_processor_pipeline(
-#    rp_processor=rp_processor,
-#    portfolio_processor=portfolio_processor,
-#    cc_fetcher=cc_fetcher,
-#    asset_processor=asset_processor,
-#    reddit_ids=[
-#        "1l1smbv",
-#        "1i9txgu"      
-#    ]
+#upload_portfolio_purchases_to_db_pipeline(
+#    portfolio_processor
 #)
+
+redditposts_processor_pipeline(
+    rp_processor=rp_processor,
+    portfolio_processor=portfolio_processor,
+    cc_fetcher=cc_fetcher,
+    asset_processor=asset_processor,
+    reddit_ids=[
+        "1l1smbv",
+        "1i9txgu"      
+    ]
+)

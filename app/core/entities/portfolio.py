@@ -6,7 +6,7 @@ class Purchase():
             name: str,
             abbreviation: str,
             amount: float,
-            purchase_price_per_unit: float = 0.0,
+            total_purchase_value: float,
             purchase_date: str = None,
             id: str = None,
     ):
@@ -16,10 +16,9 @@ class Purchase():
         self.name = name
         self.abbreviation = abbreviation
         self.amount = amount
-        self.purchase_price_per_unit = purchase_price_per_unit
+        self.purchase_price_per_unit = total_purchase_value / amount 
         self.purchase_date = purchase_date
-        self.total_purchase_value = self.amount *\
-            self.purchase_price_per_unit
+        self.total_purchase_value = total_purchase_value
 
     def get_purchase_as_dict(self):
         return {

@@ -67,8 +67,6 @@ class PortfolioProcessor:
     ):
         pass
 
-    
-        
     def create_purchase(
         self,
         source: str,
@@ -78,7 +76,7 @@ class PortfolioProcessor:
         amount: float,
         currency: str,
         purchase_date: str,
-        purchase_price_per_unit: float = None,
+        total_purchase_value: float
     ):
         """
         Create an purchase object.
@@ -98,7 +96,7 @@ class PortfolioProcessor:
                 )
                 exchange_rate = 1.0
             amount = amount * exchange_rate
-            purchase_price_per_unit = purchase_price_per_unit / exchange_rate
+            total_purchase_value = total_purchase_value / exchange_rate
 
         return Purchase(
             source=source,
@@ -106,6 +104,6 @@ class PortfolioProcessor:
             name=name,
             abbreviation=abbreviation,
             amount=amount,
-            purchase_price_per_unit=purchase_price_per_unit,
+            total_purchase_value=total_purchase_value,
             purchase_date=purchase_date
         )

@@ -41,6 +41,13 @@ def track_crypto_currency_in_db(
     """
     Track the crypto currency in formation in the database (table:CCAssets).
     """
+    if provider_coin_id.get("coin_market_cap") is None and provider_coin_id.get("coin_gecko") is None:
+        logger.error(
+            f"""Cannot track {name} ({abbreviation}) in DB.
+            No coin ids provided."""
+        )
+        return False
+    
     sql_query = f"""
         INSERT INTO {
             db_interface.tables[COIN_ASSET_TABLE_NAME_KEY].name

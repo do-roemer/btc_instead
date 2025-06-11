@@ -8,6 +8,7 @@ from app.core.services.process_asset import AssetProcessor
 from app.core.fetcher.reddit import RedditFetcher
 from app.core.database.db_interface import DatabaseInterface
 from app.core.fetcher.crypto_currency import CryptoCurrencyFetcher
+from app.core.entities.portfolio import Purchase
 from app.core.database.asset_db_handler import (
     get_tracked_crypto_currency_in_db
 )
@@ -32,7 +33,7 @@ def redditposts_processor_pipeline(
     # Initialize portfolios in the database for each processed Reddit post
     if not app_config["debug"]["is_debug"]:
         for result in reddit_process_results:
-            if result["is_portfolio"]:
+            if result['result']["is_portfolio"]:
                 portfolio_processor.initialize_portfolio_in_db(
                     source="reddit",
                     source_id=result["source_id"],
@@ -54,7 +55,20 @@ def upload_portfolio_purchases_to_db_pipeline(
 ):
     with open("data/mock/reddit_post_process_results.json", "r") as f:
         process_result_dicts = json.load(f)
-    
+        purchases = []
+        for portfolio_data in process_result_dicts:
+            for puchase in portfolio_data['result']["positions"]:
+                purchases.append(
+                    portfolio_processor.create_purchase(
+                        source="reddit",
+                        source_id=portfolio_data["source_id"],
+                        name=puchase["name"],
+                        abbreviation=puchase["abbreviation"],
+                        amount=puchase["amount"],
+                        total_purchase_value=puchase["price"],
+                        purchase_date=portfolio_data['created_date']
+                    )
+                )
     print("end")
 
 
@@ -67,6 +81,14 @@ def init_asset_into_db_pipeline(
     Initialize assets into the database.
     """
     for asset in asset_data:
+        if asset_processor.crypto_currency_is_tracked(
+            name=asset["name"],
+            abbreviation=asset["abbreviation"]
+        ):
+            logger.info(
+                f"Crypto currency {asset['name']} ({asset['abbreviation']}) is already tracked."
+            )
+            continue
         cmc_coin_id = cc_fetcher.find_coin_id(
             name=asset["name"],
             abbreviation=asset["abbreviation"],

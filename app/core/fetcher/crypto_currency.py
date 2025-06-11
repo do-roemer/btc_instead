@@ -57,6 +57,10 @@ class CryptoCurrencyFetcher():
                 (mapping_df["abbreviation"] == abbreviation.upper()) &
                 (mapping_df["name"] == name.capitalize())
         ]
+        if coin_match.empty:
+            coin_match = mapping_df[
+                (mapping_df["abbreviation"] == abbreviation.upper())
+            ]
         if provider == "coin_gecko":
             try:
                 coin_id = coin_match["id"].iloc[0]

@@ -7,7 +7,8 @@ from app.core.database.asset_db_handler import (
     insert_crypto_currency_price_to_db,
     crypto_currency_is_tracked_in_db,
     track_crypto_currency_in_db,
-    get_coin_ids_for_providers
+    get_coin_ids_for_providers,
+    crypto_currency_is_tracked_in_db
 )
 from app.core.fetcher.crypto_currency import CryptoCurrencyFetcher
 
@@ -51,8 +52,7 @@ class AssetProcessor:
         name: str,
         abbreviation: str
     ) -> dict:
-        if not crypto_currency_is_tracked_in_db(
-                self.db_interface,
+        if not self.crypto_currency_is_tracked(
                 name=name,
                 abbreviation=abbreviation
         ):
@@ -178,9 +178,31 @@ class AssetProcessor:
         """
         Insert or update asset data in the database.
         """
-        track_crypto_currency_in_db(
+        if not self.crypto_currency_is_tracked(
+            name=name,
+            abbreviation=abbreviation
+        ):
+            # If the asset is not tracked, insert it into the database
+            logger.info(
+                f"Tracking new crypto currency: {name} ({abbreviation})"
+            )
+            track_crypto_currency_in_db(
+                db_interface=self.db_interface,
+                name=name,
+                abbreviation=abbreviation,
+                provider_coin_id=provider_coin_id
+            )
+
+    def crypto_currency_is_tracked(
+        self,
+        name: str,
+        abbreviation: str
+    ) -> bool:
+        """
+        Check if the crypto currency is tracked in the database.
+        """
+        return crypto_currency_is_tracked_in_db(
             db_interface=self.db_interface,
             name=name,
-            abbreviation=abbreviation,
-            provider_coin_id=provider_coin_id
+            abbreviation=abbreviation
         )
