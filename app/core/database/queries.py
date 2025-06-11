@@ -70,16 +70,28 @@ INSERT_CRYPTO_CURRENCY_PRICE_TEMPLATE = """
 
 INSERT_NEW_PURCHASE_TEMPLATE = """
     INSERT INTO {table_name} (
-        source, source_id, name, abbreviation, amount, purchase_price_per_unit
+        source, source_id, name, abbreviation, amount, purchase_price_per_unit,
         purchase_date, total_purchase_value
     ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
     ON DUPLICATE KEY UPDATE
-        source = VALUES(),
-        = VALUES(),
-        = VALUES(),
-        = VALUES(),
-        = VALUES(),
-        = VALUES(),
-        = VALUES(),
-        = VALUES(),
+        source = VALUES(source),
+        source_id = VALUES(source_id),
+        name = VALUES(name),
+        abbreviation = VALUES(abbreviation),
+        amount = VALUES(amount),
+        purchase_price_per_unit = VALUES(purchase_price_per_unit),
+        purchase_date = VALUES(purchase_date),
+        total_purchase_value = VALUES(total_purchase_value)
+"""
+
+GET_PURCHASES_BY_SOURCE_ID_TEMPLATE = """
+    SELECT * FROM {table_name}
+    WHERE source = %s AND source_id = %s
+    ORDER BY purchase_date ASC
+"""
+
+GET_PORTFOLIO_BY_SOURCE_ID_TEMPLATE = """
+    SELECT * FROM {table_name}
+    WHERE source = %s AND source_id = %s
+    ORDER BY created_date DESC
 """

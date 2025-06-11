@@ -19,7 +19,7 @@ MYSQL_TABLES = {
     }
 
 DEBUG = {
-    'is_debug': False,
+    'is_debug': True,
     'print_debug': False
 }
 

@@ -1,5 +1,3 @@
-from dotenv import load_dotenv
-
 from app.core.utils.utils import set_logger
 from app.core.fetcher.fiat_exchange import (
     get_historical_exchange_rate_for_usd
@@ -12,7 +10,10 @@ from app.core.entities.portfolio import (
 )
 from app.core.database.db_interface import DatabaseInterface
 from app.core.database.portfolio_db_handler import (
-    insert_portfolio_to_db
+    insert_portfolio_to_db,
+    upload_purchase_to_db,
+    get_purchases_for_portfolio,
+    get_portfolio_by_source_id
 )
 secret_config = secrets.get_config()
 app_config = get_config()
@@ -61,11 +62,112 @@ class PortfolioProcessor:
             is_new=True
         )
 
-    def purchase_to_db(
-        portfolio,
-        purchase  
+    def evaluate_portfolio(
+            self,
+            source: str,
+            source_id: str
     ):
-        pass
+        portfolio = self.get_portfolio_by_source_id_from_db(
+            source=source,
+            source_id=source_id
+        )
+        purchases = self.get_purchases_for_portfolio_from_db(
+            source=source,
+            source_id=source_id
+        )
+        if not purchases:
+            logger.warning(
+                f"No purchases found for portfolio {source} - {source_id}."
+            )
+            return None
+        total_investment = sum(purchase.total_purchase_value for purchase in purchases)
+        start_value = sum(purchase.amount for purchase in purchases)
+
+        print(f"Total investment: {total_investment}")
+
+    def get_purchases_for_portfolio_from_db(
+            self,
+            source: str,
+            source_id: str
+    ) -> list[Purchase]:
+        """
+        Get all purchases for a portfolio by source and source_id.
+        """
+        purchases_data = get_purchases_for_portfolio(
+            db_interface=self.db_interface,
+            source=source,
+            source_id=source_id
+        )
+        if not purchases_data:
+            logger.warning(
+                f"No purchases found for portfolio {source} - {source_id}."
+            )
+            return []
+        purchases = [
+            Purchase(
+                source=purchase['source'],
+                source_id=purchase['source_id'],
+                name=purchase['name'],
+                abbreviation=purchase['abbreviation'],
+                amount=purchase['amount'],
+                total_purchase_value=purchase['total_purchase_value'],
+                purchase_date=purchase['purchase_date']
+            ) for purchase in purchases_data
+        ]
+        return purchases
+
+    def get_portfolio_by_source_id_from_db(
+            self,
+            source: str,
+            source_id: str
+    ) -> Portfolio:
+        """
+        Get a portfolio by source and source_id.
+        """
+        portfolio_data = get_portfolio_by_source_id(
+            db_interface=self.db_interface,
+            source=source,
+            source_id=source_id
+        )
+        if not portfolio_data:
+            logger.warning(
+                f"No portfolio found for source id: {source_id}"
+            )
+            return None
+        portfolio = Portfolio(
+            source=portfolio_data['source'],
+            source_id=portfolio_data['source_id'],
+            total_investment=portfolio_data['total_investment'],
+            start_value=portfolio_data['start_value'],
+            current_value=portfolio_data['current_value'],
+            profit_percentage=portfolio_data['profit_percentage'],
+            profit_total=portfolio_data['profit_total'],
+            btci_current_value=portfolio_data['btci_current_value'],
+            btci_profit_percentage=portfolio_data['btci_profit_percentage'],
+            btci_profit_total=portfolio_data['btci_profit_total'],
+            created_date=portfolio_data['created_date'],
+            updated_date=portfolio_data['updated_date']
+        )
+        return portfolio
+
+    def purchase_to_db(
+            self,
+            purchase: Purchase
+    ):
+        """
+        Upload a purchase to the database.
+        """
+        _ = upload_purchase_to_db(
+            db_interface=self.db_interface,
+            source=purchase.source,
+            source_id=purchase.source_id,
+            name=purchase.name,
+            abbreviation=purchase.abbreviation,
+            amount=purchase.amount,
+            purchase_price_per_unit=purchase.purchase_price_per_unit,
+            purchase_date=purchase.purchase_date,
+            total_purchase_value=purchase.total_purchase_value
+        )
 
     def create_purchase(
         self,

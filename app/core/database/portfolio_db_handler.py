@@ -5,7 +5,12 @@ from app.core.database.db_interface import DatabaseInterface
 from app.core.utils.utils import set_logger
 from app.core.entities.portfolio import Portfolio
 from app.core.app_config import get_config
-from app.core.database.queries import INSERT_NEW_PORTFOLIO_TEMPLATE
+from app.core.database.queries import (
+    INSERT_NEW_PORTFOLIO_TEMPLATE,
+    INSERT_NEW_PURCHASE_TEMPLATE,
+    GET_PURCHASES_BY_SOURCE_ID_TEMPLATE,
+    GET_PORTFOLIO_BY_SOURCE_ID_TEMPLATE
+)
 app_config = get_config()
 
 logger = set_logger(name=__name__)
@@ -29,7 +34,8 @@ def portfolio_already_exists(
     )
     return len(result) > 0
 
-def purchase_to_db(
+
+def upload_purchase_to_db(
         db_interface: DatabaseInterface,
         source: str,
         source_id: str,
@@ -40,7 +46,96 @@ def purchase_to_db(
         purchase_date: str,
         total_purchase_value: float
 ):
-    pass
+    """
+    Insert a purchase into the database.
+    """
+    logger.info(
+        f"""Uploading purchase to DB for source id: {source_id}"""
+    )
+    error = False
+    try:
+        purchase_data_tuple = (
+            source,
+            source_id,
+            name,
+            abbreviation,
+            amount,
+            purchase_price_per_unit,
+            purchase_date,
+            total_purchase_value
+        )
+
+        sql_query = INSERT_NEW_PURCHASE_TEMPLATE.format(
+            table_name=db_interface.tables["purchases"].name
+        )
+        _ = db_interface.execute_query(
+            sql_query, purchase_data_tuple)
+
+    except Exception as e:
+        logger.error(
+            f"Error inserting purchase: {e}",
+            exc_info=True
+        )
+        error = True
+    return error 
+
+
+def get_purchases_for_portfolio(
+        db_interface: DatabaseInterface,
+        source: str,
+        source_id: str
+):
+    """
+    Evaluate the portfolio and return the evaluation result.
+    This function is a placeholder for future implementation.
+    """
+    logger.info(
+        f"""Evaluating portfolio for source id: {source_id}"""
+    )
+    sql_query = GET_PURCHASES_BY_SOURCE_ID_TEMPLATE.format(
+        table_name=db_interface.tables["purchases"].name
+    )
+
+    purchases = db_interface.execute_query(
+        sql_query,
+        (source, source_id),
+        dictionary_cursor=True
+    )
+    if not purchases:
+        logger.warning(
+            f"""No purchases found for source id: {source_id}"""
+        )
+        return None
+    return purchases
+
+
+def get_portfolio_by_source_id(
+        db_interface: DatabaseInterface,
+        source: str,
+        source_id: str
+):
+    """
+    Get the portfolio by source and source_id.
+    """
+    logger.info(
+        f"""Getting portfolio for source id: {source_id}"""
+    )
+    sql_query = GET_PORTFOLIO_BY_SOURCE_ID_TEMPLATE.format(
+        table_name=db_interface.tables["portfolios"].name
+    )
+
+    portfolio = db_interface.execute_query(
+        sql_query,
+        (source, source_id),
+        dictionary_cursor=True
+    )
+    if not portfolio:
+        logger.warning(
+            f"""No portfolio found for source id: {source_id}"""
+        )
+        return None
+    return portfolio[0]
+
 
 def insert_portfolio_to_db(
         db_interface: DatabaseInterface,

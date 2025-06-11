@@ -49,27 +49,61 @@ def redditposts_processor_pipeline(
     logger.info("Initialized portfolios.")
 
 
+def evaluate_portfolios_pipeline(
+    source: str,
+    source_ids: list[str],
+    portfolio_processor: PortfolioProcessor
+):
+    """
+    Evaluate portfolios based on source IDs.
+    """
+    for source_id in source_ids:
+        portfolio = portfolio_processor.evaluate_portfolio(
+            source=source,
+            source_id=source_id
+        )
+
+
 def upload_portfolio_purchases_to_db_pipeline(
         portfolio_processor: PortfolioProcessor,
-        purchases: dict = None,
+        purchases: list[Purchase] = None
 ):
-    with open("data/mock/reddit_post_process_results.json", "r") as f:
-        process_result_dicts = json.load(f)
-        purchases = []
-        for portfolio_data in process_result_dicts:
-            for puchase in portfolio_data['result']["positions"]:
-                purchases.append(
-                    portfolio_processor.create_purchase(
-                        source="reddit",
-                        source_id=portfolio_data["source_id"],
-                        name=puchase["name"],
-                        abbreviation=puchase["abbreviation"],
-                        amount=puchase["amount"],
-                        total_purchase_value=puchase["price"],
-                        purchase_date=portfolio_data['created_date']
+    if app_config["debug"]["is_debug"]:
+        with open("data/mock/reddit_post_process_results.json", "r") as f:
+            process_result_dicts = json.load(f)
+            for portfolio_data in process_result_dicts:
+                for purchase in portfolio_data['result']["positions"]:
+                    purchase_instance = portfolio_processor.create_purchase(
+                            source="reddit",
+                            source_id=portfolio_data["source_id"],
+                            name=purchase["name"],
+                            abbreviation=purchase["abbreviation"],
+                            amount=purchase["amount"],
+                            total_purchase_value=purchase["price"],
+                            purchase_date=portfolio_data['created_date'].split("T")[0],
+                            currency=purchase.get("currency", "usd"),
+                        )
+                    portfolio_processor.purchase_to_db(
+                        purchase_instance
                     )
-                )
-    print("end")
+    else:
+        if purchases is None:
+            logger.error("No purchases provided to upload to the database.")
+            return
+        for purchase in purchases:
+            purchase_instance = portfolio_processor.create_purchase(
+                source=purchase["source"],
+                source_id=purchase["source_id"],
+                name=purchase["name"],
+                abbreviation=purchase["abbreviation"],
+                amount=purchase["amount"],
+                total_purchase_value=purchase["total_purchase_value"],
+                purchase_date=purchase["purchase_date"],
+                currency=purchase.get("currency", "usd"),
+            )
+            portfolio_processor.purchase_to_db(
+                purchase_instance
+            )
 
 
 def init_asset_into_db_pipeline(

@@ -109,10 +109,14 @@ class DatabaseInterface:
     def execute_query(
             self,
             query: str,
-            params: tuple = None
+            params: tuple = None,
+            dictionary_cursor: bool = False
     ):
         try:
-            with DatabaseConnection(self.db_config) as cursor:
+            with DatabaseConnection(
+                self.db_config,
+                dictionary_cursor=dictionary_cursor
+            ) as cursor:
                 cursor.execute(query, params)
                 return cursor.fetchall()
         except pymysql.Error as err:
