@@ -4,9 +4,9 @@
 HOME_DIR="/root"
 PROJECT_DIR="$HOME_DIR/code_repository/btc_instead"
 VENV_PATH="$PROJECT_DIR/.venv/bin/activate"
-SCRIPT_PATH="$PROJECT_DIR/execute_pipelines.py"
+SCRIPT_PATH="$PROJECT_DIR/execute_daily_pipelines.py"
 LOG_DIR="$PROJECT_DIR/logs"
-LOG_FILE="$PROJECT_DIR/logs/daily_fetcher.log" # Ensure 'logs' directory exists
+LOG_FILE="$PROJECT_DIR/logs/daily_pipelines.log" # Ensure 'logs' directory exists
 
 
 echo "----------------------------------------" >> "$LOG_FILE"
