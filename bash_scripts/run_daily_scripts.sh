@@ -38,7 +38,7 @@ cd "$PROJECT_DIR"
     
     # Execute the Python script using the venv's interpreter
     # The '2>&1' ensures that Python errors (stderr) are also logged.
-    "$VENV_PYTHON" "-m server_scripts.execute_daily_pipelines"
+    "$VENV_PYTHON" "$SCRIPT_PATH"
     
     # The exit code will be captured by the 'set -e' and the final 'exit 0'
     
