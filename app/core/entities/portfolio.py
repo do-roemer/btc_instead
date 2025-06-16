@@ -91,6 +91,17 @@ class Portfolio():
             "updated_date": self.updated_date
         }
 
+    def update_values(
+            self,
+            **kwargs: dict[str, float | str | int | None]
+    ):
+        for key, value in kwargs.items():
+            if hasattr(self, key):
+                setattr(self, key, value)
+            else:
+                raise ValueError(f"Invalid attribute: {key}")
+        return self
+    
     @classmethod
     def from_db_row(cls, row: tuple):
         pass

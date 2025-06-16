@@ -46,12 +46,8 @@ except Exception as e:
     raise
 
 
-# --- Lambda Handler ---
 def pipeline():
-    """
-    AWS Lambda handler function to fetch hot posts from Reddit
-    and store them in a database.
-    """
+
     logger.info("--- Starting daily hot posts fetch execution ---")
     fetched_posts_data = []
 

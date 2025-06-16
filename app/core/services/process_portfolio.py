@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from app.core.utils.utils import set_logger
 from app.core.fetcher.fiat_exchange import (
     get_historical_exchange_rate_for_usd
@@ -80,10 +82,38 @@ class PortfolioProcessor:
                 f"No purchases found for portfolio {source} - {source_id}."
             )
             return None
-        total_investment = sum(purchase.total_purchase_value for purchase in purchases)
-        start_value = sum(purchase.amount for purchase in purchases)
+        
+        
+
 
         print(f"Total investment: {total_investment}")
+
+    def calculate_portfolio_values(
+            self,
+            portfolio: Portfolio,
+            purchases: list[Purchase]
+    ) -> Portfolio:
+        """
+        Calculate the current value and profit of the portfolio.
+        """
+        total_investment = sum(purchase.total_purchase_value for purchase in purchases)
+        current_value = sum(purchase.amount for purchase in purchases)
+        profit_total = current_value - total_investment
+        profit_percentage = (profit_total / total_investment) * 100
+        start_value = sum(purchase.amount for purchase in purchases)
+        update_date = datetime.now().strftime("%Y-%m-%d")
+
+        portfolio.update_values(
+            {
+                "start_value": start_value,
+                "current_value": current_value,
+                "profit_percentage": profit_percentage,
+                "profit_total": profit_total,
+                "total_investment": portfolio.total_investment,
+                "updated_date": update_date
+            }
+        )
+        return portfolio
 
     def get_purchases_for_portfolio_from_db(
             self,
