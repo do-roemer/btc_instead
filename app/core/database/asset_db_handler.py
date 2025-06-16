@@ -182,5 +182,30 @@ def insert_crypto_currency_price_to_db(
         logger.error(
             f"""Error inserting {abbreviation} price to DB: {e}"""
         )
-    
     return processed_finished
+
+
+def get_asset_price_from_db_by_iso_week_year(
+        db_interface,
+        name: str,
+        abbreviation: str,
+        iso_week: str,
+        iso_year: int
+):
+    """
+    Get the price of an asset from the database.
+    """
+    sql_query = f"""
+        SELECT * FROM {
+            db_interface.tables[PRICE_TABLE_NAME_KEY].name
+            }
+        WHERE name = %s AND abbreviation = %s AND iso_week = %s
+        AND iso_year = %s
+    """
+    result = db_interface.execute_query(
+        sql_query,
+        (name.lower(), abbreviation.lower(), iso_week, iso_year)
+    )
+    if not result:
+        return None
+    return result[0]  # Return the first matching record

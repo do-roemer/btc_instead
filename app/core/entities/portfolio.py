@@ -1,3 +1,8 @@
+
+from datetime import datetime
+from app.core.database.asset_db_handler import (
+    get_asset_price_from_db_by_iso_week_year
+)
 class Purchase():
     def __init__(
             self,
@@ -33,6 +38,27 @@ class Purchase():
             "purchase_date": self.purchase_date
         }
 
+    def get_current_value(self, db_interface) -> float:
+        """
+        Calculate the current value of the purchase.
+        This method should be overridden in subclasses if needed.
+        """
+        iso_year, iso_week, _ = self.purchase_date.isocalendar()
+        asset_price = get_asset_price_from_db_by_iso_week_year(
+            db_interface=db_interface,
+            name=self.name,
+            abbreviation=self.abbreviation,
+            iso_week=iso_week,
+            iso_year=iso_year
+        )
+        if asset_price is None:
+            raise ValueError(
+                f"No price found for {self.name} "
+                f"({self.abbreviation}) on {self.purchase_date}."
+            )
+        self.total_current_value = asset_price * self.amount
+        return self.total_current_value
+    
     def __str__(self):
         return f"""
         {self.name}: {self.amount}

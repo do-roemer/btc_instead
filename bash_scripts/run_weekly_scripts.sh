@@ -1,5 +1,6 @@
 #!/bin/bash
 
+echo "Starting weekly pipeline execution script..."
 # Define paths (makes it easier to manage)
 HOME_DIR="/root"
 PROJECT_DIR="$HOME_DIR/code_repository/btc_instead"

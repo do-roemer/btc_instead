@@ -1,5 +1,5 @@
 #!/bin/bash
-
+echo "Running daily scripts..."
 # Define paths (makes it easier to manage)
 HOME_DIR="/root"
 PROJECT_DIR="$HOME_DIR/code_repository/btc_instead"

@@ -42,11 +42,6 @@ reddit_fetcher = RedditFetcher(
                 password=secret_config.get("REDDIT_PASSWORD")
             )
 
-fetch_and_upload_weeklsy_crypto_prices_to_db_pipeline(
-    db_interface=db_interface,
-    asset_processor=asset_processor
-)
-
 evaluate_portfolios_pipeline(
     source="reddit",
     source_ids=[

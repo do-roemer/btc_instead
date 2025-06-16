@@ -77,16 +77,29 @@ class PortfolioProcessor:
             source=source,
             source_id=source_id
         )
+
         if not purchases:
             logger.warning(
                 f"No purchases found for portfolio {source} - {source_id}."
             )
             return None
-        
-        
+        else:
+            for purchase in purchases:
+                purchase.get_current_value(
+                    db_interface=self.db_interface
+                )
+            portfolio = self.calculate_portfolio_values(
+                portfolio=portfolio,
+                purchases=purchases
+            )
 
-
-        print(f"Total investment: {total_investment}")
+        logger.info(
+            f"Evaluated portfolio {source} - {source_id} "
+            f"with current value: {portfolio.current_value}, "
+            f"profit percentage: {portfolio.profit_percentage:.2f}%, "
+            f"profit total: {portfolio.profit_total:.2f}"
+        )
+        return portfolio
 
     def calculate_portfolio_values(
             self,
@@ -96,6 +109,8 @@ class PortfolioProcessor:
         """
         Calculate the current value and profit of the portfolio.
         """
+        current_asset_prices = []
+
         total_investment = sum(purchase.total_purchase_value for purchase in purchases)
         current_value = sum(purchase.amount for purchase in purchases)
         profit_total = current_value - total_investment
