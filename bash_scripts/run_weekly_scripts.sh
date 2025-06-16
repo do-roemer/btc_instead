@@ -18,7 +18,6 @@ echo "PROJECT_DIR used in script: $PROJECT_DIR" >> "$LOG_FILE"
 echo "LOG_DIR used in script: $LOG_DIR" >> "$LOG_FILE"
 echo "Current working directory before cd: $(pwd)" >> "$LOG_FILE"
 
-cd "$PROJECT_DIR" || exit
 
 # Activate virtual environment
 if [ -f "$VENV_PATH" ]; then

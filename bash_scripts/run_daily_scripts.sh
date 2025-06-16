@@ -1,49 +1,52 @@
 #!/bin/bash
-echo "Running daily scripts..."
-# Define paths (makes it easier to manage)
+
+# --- Configuration ---
+# Exit immediately if a command exits with a non-zero status.
+set -e
+
+# Define paths
 HOME_DIR="/root"
 PROJECT_DIR="$HOME_DIR/code_repository/btc_instead"
-VENV_PATH="$PROJECT_DIR/.venv/bin/activate"
+# Point directly to the Python executable in the venv
+VENV_PYTHON="$PROJECT_DIR/.venv/bin/python"
 SCRIPT_PATH="$PROJECT_DIR/server_scripts/execute_daily_pipelines.py"
 LOG_DIR="$PROJECT_DIR/logs"
-LOG_FILE="$PROJECT_DIR/logs/daily_pipelines.log" # Ensure 'logs' directory exists
+LOG_FILE="$LOG_DIR/daily_pipelines.log"
 
+# --- Pre-run Setup ---
+# Ensure log directory exists
+mkdir -p "$LOG_DIR"
 
-echo "----------------------------------------" >> "$LOG_FILE"
-echo "Job started at: $(date)" >> "$LOG_FILE"
-echo "Script running as user: $(whoami)" >> "$LOG_FILE" # Should show 'root'
-echo "HOME_DIR used in script: $HOME_DIR" >> "$LOG_FILE"
-echo "PROJECT_DIR used in script: $PROJECT_DIR" >> "$LOG_FILE"
-echo "LOG_DIR used in script: $LOG_DIR" >> "$LOG_FILE"
-echo "Current working directory before cd: $(pwd)" >> "$LOG_FILE"
-
-cd "$PROJECT_DIR" || exit
-
-# Activate virtual environment
-if [ -f "$VENV_PATH" ]; then
-    . "$VENV_PATH" # Note the space after the dot
-    echo "Virtual environment activated using: . $VENV_PATH" >> "$LOG_FILE"
-else
-    echo "ERROR: Virtual environment activate script not found at $VENV_PATH" >> "$LOG_FILE"
-    exit 1
-fi
-
-# Navigate to the project directory
+# Change to the project's root directory. All subsequent commands run from here.
+# set -e will handle the error if this fails.
 cd "$PROJECT_DIR"
-if [ "$?" -ne 0 ]; then
-    echo "ERROR: Failed to cd to $PROJECT_DIR" >> "$LOG_FILE"
-    echo "Current working directory after failed cd: $(pwd)" >> "$LOG_FILE"
-    exit 1
-else
-    echo "Successfully changed to directory: $(pwd)" >> "$LOG_FILE"
-fi
 
-# Execute the Python script
-echo "Attempting to execute Python script: python $SCRIPT_PATH" >> "$LOG_FILE"
-python "$SCRIPT_PATH" >> "$LOG_FILE" 2>&1
-SCRIPT_EXIT_CODE=$?
+# --- Execution & Logging ---
+# Use a block to redirect all output to the log file at once.
+{
+    echo "----------------------------------------"
+    echo "Job started at: $(date)"
+    echo "Running as user: $(whoami) in directory: $(pwd)"
+    
+    # Check if the venv Python exists
+    if [ ! -f "$VENV_PYTHON" ]; then
+        echo "ERROR: Virtual environment Python not found at $VENV_PYTHON"
+        exit 1
+    fi
+    
+    echo "Executing script: $SCRIPT_PATH with interpreter $VENV_PYTHON"
+    
+    # Execute the Python script using the venv's interpreter
+    # The '2>&1' ensures that Python errors (stderr) are also logged.
+    "$VENV_PYTHON" "$SCRIPT_PATH"
+    
+    # The exit code will be captured by the 'set -e' and the final 'exit 0'
+    
+    echo "Job finished successfully at: $(date)"
+    echo ""
 
-echo "Python script finished with exit code: $SCRIPT_EXIT_CODE" >> "$LOG_FILE"
-echo "Job finished at: $(date)" >> "$LOG_FILE"
+} >> "$LOG_FILE" 2>&1
 
-exit $SCRIPT_EXIT_CODE
+# If we get here, it means all commands succeeded due to 'set -e'
+echo "Daily script executed successfully. See log for details: $LOG_FILE"
+exit 0

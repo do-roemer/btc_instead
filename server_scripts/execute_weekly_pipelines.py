@@ -1,3 +1,3 @@
-from fetch_weekly_cc_prices import pipeline as weekly_prices_pipeline
+from server_scripts.fetch_weekly_cc_prices import pipeline as weekly_prices_pipeline
 
 weekly_prices_pipeline()
