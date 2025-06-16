@@ -1,4 +1,3 @@
-from app.core.app_config import get_config
 from app.core.pipelines.local_pipelines import (
     fetch_and_upload_weeklsy_crypto_prices_to_db_pipeline
 )
