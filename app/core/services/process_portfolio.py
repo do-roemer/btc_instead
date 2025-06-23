@@ -6,10 +6,8 @@ from app.core.fetcher.fiat_exchange import (
 )
 import app.core.secret_handler as secrets
 from app.core.app_config import get_config
-from app.core.entities.portfolio import (
-    Portfolio,
-    Purchase
-)
+from app.core.entities.purchase import Purchase
+from app.core.entities.portfolio import Portfolio
 from app.core.database.db_interface import DatabaseInterface
 from app.core.database.portfolio_db_handler import (
     insert_portfolio_to_db,
@@ -66,67 +64,37 @@ class PortfolioProcessor:
 
     def evaluate_portfolio(
             self,
-            source: str,
-            source_id: str
-    ):
-        portfolio = self.get_portfolio_by_source_id_from_db(
-            source=source,
-            source_id=source_id
-        )
-        purchases = self.get_purchases_for_portfolio_from_db(
-            source=source,
-            source_id=source_id
-        )
-
-        if not purchases:
-            logger.warning(
-                f"No purchases found for portfolio {source} - {source_id}."
-            )
-            return None
-        else:
-            for purchase in purchases:
-                purchase.get_current_value(
-                    db_interface=self.db_interface
-                )
-            portfolio = self.calculate_portfolio_values(
-                portfolio=portfolio,
-                purchases=purchases
-            )
-
-        logger.info(
-            f"Evaluated portfolio {source} - {source_id} "
-            f"with current value: {portfolio.current_value}, "
-            f"profit percentage: {portfolio.profit_percentage:.2f}%, "
-            f"profit total: {portfolio.profit_total:.2f}"
-        )
-        return portfolio
-
-    def calculate_portfolio_values(
-            self,
             portfolio: Portfolio,
-            purchases: list[Purchase]
+            current_btc_price: float,
+            past_btc_price: float
     ) -> Portfolio:
         """
         Calculate the current value and profit of the portfolio.
         """
-        current_asset_prices = []
-
-        total_investment = sum(purchase.total_purchase_value for purchase in purchases)
-        current_value = sum(purchase.amount for purchase in purchases)
+        total_investment = sum(float(purchase.total_purchase_value) for purchase in portfolio.purchases)
+        current_value = sum(float(purchase.current_value) * float(purchase.amount)
+                            for purchase in portfolio.purchases)
         profit_total = current_value - total_investment
         profit_percentage = (profit_total / total_investment) * 100
-        start_value = sum(purchase.amount for purchase in purchases)
         update_date = datetime.now().strftime("%Y-%m-%d")
 
+        # btc instead values
+        btci_start_value = total_investment / float(past_btc_price)
+        btci_current_value = total_investment / float(current_btc_price)
+        btci_profit_total = btci_current_value - btci_start_value
+        btci_profit_percentage = (btci_profit_total / btci_start_value) * 100
+
+        # Update the portfolio with the calculated values
         portfolio.update_values(
-            {
-                "start_value": start_value,
-                "current_value": current_value,
-                "profit_percentage": profit_percentage,
-                "profit_total": profit_total,
-                "total_investment": portfolio.total_investment,
-                "updated_date": update_date
-            }
+            total_investment=total_investment,
+            current_value=current_value,
+            profit_percentage=profit_percentage,
+            profit_total=profit_total,
+            updated_date=update_date,
+            btci_start_value=btci_start_value,
+            btci_current_value=btci_current_value,
+            btci_profit_total=btci_profit_total,
+            btci_profit_percentage=btci_profit_percentage
         )
         return portfolio
 

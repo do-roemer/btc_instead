@@ -9,7 +9,8 @@ from app.core.pipelines.local_pipelines import (
     redditposts_processor_pipeline,
     fetch_and_upload_weeklsy_crypto_prices_to_db_pipeline,
     upload_portfolio_purchases_to_db_pipeline,
-    evaluate_portfolios_pipeline
+    evaluate_portfolio_pipeline,
+    extract_and_save_cc_prices_of_past_year_pipeline
 )
 secret_config = secrets.get_config()
 
@@ -41,14 +42,19 @@ reddit_fetcher = RedditFetcher(
                 username=secret_config.get("REDDIT_USERNAME"),
                 password=secret_config.get("REDDIT_PASSWORD")
             )
-
-evaluate_portfolios_pipeline(
+# extract_and_save_cc_prices_of_past_year_pipeline(
+#     cc_fetcher=cc_fetcher,
+#     asset_processor=asset_processor,
+#     name="bitcoin",
+#     abbreviation="btc",
+#     currency="usd"
+# )
+evaluate_portfolio_pipeline(
     source="reddit",
-    source_ids=[
-        "1l1smbv",
-        "1i9txgu"
-    ],
-    portfolio_processor=portfolio_processor
+    source_id="1l1smbv",
+    portfolio_processor=portfolio_processor,
+    cc_fetcher=cc_fetcher,
+    asset_processor=asset_processor
 )
 #redditposts_processor_pipeline(
 #    rp_processor=rp_processor,

@@ -32,6 +32,30 @@ def crypto_currency_is_tracked_in_db(
     return len(result) > 0
 
 
+def cc_price_is_tracked_in_db(
+        db_interface,
+        name: str,
+        abbreviation: str,
+        iso_week: int,
+        iso_year: int
+):
+    """
+    Check if the crypto currency price is already tracked in the database.
+    """
+    sql_query = f"""
+        SELECT * FROM {
+            db_interface.tables[PRICE_TABLE_NAME_KEY].name
+            }
+        WHERE name = %s AND abbreviation = %s AND iso_week = %s
+        AND iso_year = %s
+    """
+    result = db_interface.execute_query(
+        sql_query,
+        (name.lower(), abbreviation.lower(), iso_week, iso_year)
+    )
+    return len(result) > 0
+
+
 def track_crypto_currency_in_db(
         db_interface,
         name: str,
@@ -190,7 +214,8 @@ def get_asset_price_from_db_by_iso_week_year(
         name: str,
         abbreviation: str,
         iso_week: str,
-        iso_year: int
+        iso_year: int,
+        dictionary_cursor: bool = False
 ):
     """
     Get the price of an asset from the database.
@@ -204,8 +229,39 @@ def get_asset_price_from_db_by_iso_week_year(
     """
     result = db_interface.execute_query(
         sql_query,
-        (name.lower(), abbreviation.lower(), iso_week, iso_year)
+        (name.lower(), abbreviation.lower(), iso_week, iso_year),
+        dictionary_cursor=dictionary_cursor
     )
     if not result:
         return None
     return result[0]  # Return the first matching record
+
+
+def get_single_asset_from_db(
+        name: str,
+        db_interface: object,
+        abbreviation: str = None,
+        dictionary_cursor: bool = False
+
+):
+    """
+    Get a single asset from the database by name and abbreviation.
+    """
+    sql_query = f"""
+        SELECT * FROM {
+            db_interface.tables[COIN_ASSET_TABLE_NAME_KEY].name
+            }
+        WHERE name = %s
+    """
+    if abbreviation:
+        sql_query += " AND abbreviation = %s"
+
+    sql_query += ";"
+    result = db_interface.execute_query(
+        sql_query,
+        (name.lower(), abbreviation.lower()),
+        dictionary_cursor=dictionary_cursor
+    )
+    if not result:
+        return None
+    return result[0]

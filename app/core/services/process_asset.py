@@ -8,7 +8,9 @@ from app.core.database.asset_db_handler import (
     crypto_currency_is_tracked_in_db,
     track_crypto_currency_in_db,
     get_coin_ids_for_providers,
-    crypto_currency_is_tracked_in_db
+    crypto_currency_is_tracked_in_db,
+    get_single_asset_from_db,
+    cc_price_is_tracked_in_db
 )
 from app.core.fetcher.crypto_currency import CryptoCurrencyFetcher
 
@@ -112,7 +114,7 @@ class AssetProcessor:
             return asset_processed
 
         # get the prices from API
-        coin_data = self.cc_fetcher.fetch_current_weeks_coin_price(
+        coin_data = self.cc_fetcher.fetch_current_coin_price(
             coin_ids=provider_coin_ids,
             vs_currency=currency
         )
@@ -193,6 +195,24 @@ class AssetProcessor:
                 provider_coin_id=provider_coin_id
             )
 
+    def cc_price_is_tracked(
+        self,
+        name: str,
+        abbreviation: str,
+        iso_week: int,
+        iso_year: int
+    ) -> bool:
+        """
+        Check if the crypto currency price is tracked in the database.
+        """
+        return cc_price_is_tracked_in_db(
+            db_interface=self.db_interface,
+            name=name,
+            abbreviation=abbreviation,
+            iso_week=iso_week,
+            iso_year=iso_year
+        )
+
     def crypto_currency_is_tracked(
         self,
         name: str,
@@ -206,3 +226,24 @@ class AssetProcessor:
             name=name,
             abbreviation=abbreviation
         )
+
+    def get_asset_from_db(
+        self,
+        name: str,
+        abbreviation: str = None
+    ):
+        """
+        Get the asset from the database.
+        """
+        asset_data = get_single_asset_from_db(
+            db_interface=self.db_interface,
+            name=name,
+            abbreviation=abbreviation,
+            dictionary_cursor=True
+        )
+        if not asset_data:
+            logger.warning(
+                f"No asset found for {name} ({abbreviation}) in the database."
+            )
+            return None
+        return asset_data

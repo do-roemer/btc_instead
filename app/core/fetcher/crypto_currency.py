@@ -6,6 +6,7 @@ import json
 
 from app.core.utils.utils import set_logger
 from app.core.app_config import get_config
+from datetime import timedelta
 import app.core.secret_handler as secrets
 
 secret_config = secrets.get_config()
@@ -172,7 +173,7 @@ class CryptoCurrencyFetcher():
             price = None
         return price
 
-    def fetch_current_weeks_coin_price(
+    def fetch_current_coin_price(
         self,
         coin_ids: dict,
         vs_currency='usd'
@@ -216,49 +217,76 @@ class CryptoCurrencyFetcher():
         result_dict["price"] = price
         return result_dict
 
-    def fetch_historical_data_for_currency(
+    def fetch_cc_data_for_last_52_weeks_from_coin_gecko(
         self,
-        cc_abbreviation: str,
-        days: int,
-        vs_currency='usd'
+        coin_id: str,
     ):
-        # TODO: needs to be overthought, bcs. at the moment I'm not able
-        # to easily fetch historical data, bcs. CoinGecko costs money.
-        # Solution would be to write a scraper
-        coin_id = self.mapping_df[
-                self.mapping_df["abbreviation"] == cc_abbreviation.lower()]["coin_id"].iloc[0]
-        """Fetches daily data from CoinGecko and aggregates it to weekly OHLCV."""
-        print(f"\nFetching daily data for {coin_id}...")
-        # CoinGecko API endpoint for historical market data
-        url = f"https://api.coingecko.com/api/v3/coins/{coin_id}/market_chart"
-        params = {
-            'vs_currency': vs_currency,
-            'days': days,
-            'interval': 'daily' # Request daily granularity
-        }
-        headers = {'accept': 'application/json'}
+        """
+        Fetches the price of a given cryptocurrency for the last 52 weeks from the CoinGecko API.
+
+        :param coin_id: The CoinGecko ID of the cryptocurrency (e.g., 'bitcoin', 'ethereum').
+        :return: A dictionary with dates as keys and prices in USD as values.
+        """
+        results = {}
+        today = datetime.today()
+        for i in range(52):
+            week_date = today - timedelta(weeks=i)
+            # Get Monday of the week
+            monday = week_date - timedelta(days=week_date.weekday())
+            iso_year, iso_week, _ = monday.isocalendar()
+            results[(iso_year, iso_week)] = {
+                "iso_year": iso_year,
+                "iso_week": iso_week,
+                "date": monday.strftime(app_config.get("mysql_column_format").get('date')),
+                "price": self.fetch_cc_data_for_iso_week_from_coin_gecko(
+                    coin_id=coin_id,
+                    iso_week=iso_week,
+                    iso_year=iso_year
+                )            
+            }
+        return results
+
+    def fetch_cc_data_for_iso_week_from_coin_gecko(
+        self,
+        coin_id: str,
+        iso_week: int,
+        iso_year: int,
+    ):
+        """
+        Fetches the price of a given cryptocurrency on a specific date from the CoinGecko API.
+
+        :param coin_id: The CoinGecko ID of the cryptocurrency (e.g., 'bitcoin', 'ethereum').
+        :param iso_week: The ISO week number (1-53).
+        :param iso_year: The ISO year (e.g., 2023).
+        :return: The price in USD or an error message.
+    
+        :return: The price in USD or an error message.
+        """
+        
+        target_date = datetime.fromisocalendar(iso_year, iso_week, 1)
+        target_date = target_date.strftime("%d-%m-%Y")  # Format as dd-mm-yyyy
+        url = f"https://api.coingecko.com/api/v3/coins/{coin_id}/history?date={target_date}"
 
         try:
-            response = requests.get(url, headers=headers, params=params)
-            response.raise_for_status()
+            # Make the API request
+            response = requests.get(url)
+            response.raise_for_status()  # Raise an exception for bad status codes (4xx or 5xx)
+
+            # Parse the JSON response
             data = response.json()
 
-            if not data or 'prices' not in data or not data['prices']:
-                print(f"Warning: No data returned from CoinGecko for {coin_id}.")
-                return None
+            # The data can be empty if the coin didn't exist yet
+            if not data or 'market_data' not in data:
+                return f"No data found for {coin_id} on {target_date}. The coin may not have existed yet."
 
-            prices_df = pd.DataFrame(data['prices'], columns=['timestamp', 'price'])
-            volumes_df = pd.DataFrame(data['total_volumes'], columns=['timestamp', 'volume'])
+            # Extract the price in USD
+            price_usd = data['market_data']['current_price']['usd']
+            return price_usd
 
-            # Convert timestamp (milliseconds) to datetime objects (UTC)
-            prices_df['date'] = pd.to_datetime(prices_df['timestamp'], unit='ms', utc=True)
-            volumes_df['date'] = pd.to_datetime(volumes_df['timestamp'], unit='ms', utc=True)
+        except requests.exceptions.HTTPError as http_err:
+            return f"HTTP error occurred: {http_err}"
+        except requests.exceptions.RequestException as err:
+            return f"An error occurred: {err}"
+        except KeyError:
+            return "Could not find the price in the API response. The data structure may have changed."
 
-            # Set date as index for resampling
-            prices_df.set_index('date', inplace=True)
-            volumes_df.set_index('date', inplace=True)
-
-            return None
-        except requests.exceptions.RequestException as e:
-            print(f"Error fetching data for {coin_id}: {e}")
-            return None

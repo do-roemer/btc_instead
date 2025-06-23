@@ -7,6 +7,7 @@ from app.core.entities.portfolio import Portfolio
 from app.core.app_config import get_config
 from app.core.database.queries import (
     INSERT_NEW_PORTFOLIO_TEMPLATE,
+    UPDATE_PORTFOLIO_TEMPLATE,
     INSERT_NEW_PURCHASE_TEMPLATE,
     GET_PURCHASES_BY_SOURCE_ID_TEMPLATE,
     GET_PORTFOLIO_BY_SOURCE_ID_TEMPLATE
@@ -136,6 +137,57 @@ def get_portfolio_by_source_id(
         return None
     return portfolio[0]
 
+def update_portfolio_in_db(
+        db_interface: DatabaseInterface,
+        portfolio: Portfolio
+):
+    """
+    Update the portfolio in the database.
+    """
+    logger.info(
+        f"""Updating portfolio for source id: {portfolio.source_id}"""
+    )
+    try:
+        if db_interface.tables["portfolios"].columns:
+            json_columns = db_interface.tables["portfolios"].\
+                    get_json_columns()
+            processed_portfolio = portfolio
+            for column in json_columns:
+                if column in processed_portfolio and\
+                        processed_portfolio[column] is not None:
+                    if not isinstance(processed_portfolio[column], str):
+                        processed_portfolio[column] = json.dumps(
+                                processed_portfolio[column])
+
+        portfolio_data_tuple = (
+            processed_portfolio.total_investment,
+            processed_portfolio.current_value,
+            processed_portfolio.profit_percentage,
+            processed_portfolio.profit_total,
+            processed_portfolio.btci_current_value,
+            processed_portfolio.btci_profit_percentage,
+            processed_portfolio.btci_profit_total,
+            processed_portfolio.updated_date,
+            processed_portfolio.btci_start_value,
+            processed_portfolio.source,
+            processed_portfolio.source_id
+        )
+
+        sql_query = UPDATE_PORTFOLIO_TEMPLATE.format(
+            table_name=db_interface.tables["portfolios"].name,
+        )
+
+        db_interface.execute_query(
+            sql_query, portfolio_data_tuple
+        )
+
+    except Exception as e:
+        logger.error(
+            f"Error updating portfolio: {e}",
+            exc_info=True
+        )
+        raise
+
 
 def insert_portfolio_to_db(
         db_interface: DatabaseInterface,
@@ -178,13 +230,12 @@ def insert_portfolio_to_db(
                 processed_portfolio.btci_profit_total,
                 processed_portfolio.created_date,
                 processed_portfolio.updated_date,
+                processed_portfolio.btci_start_value
             )
 
             if is_new:
                 sql_query = INSERT_NEW_PORTFOLIO_TEMPLATE
-            else:
-                sql_query = INSERT_NEW_PORTFOLIO_TEMPLATE
-                # TODO: Add update logic here
+
             final_query = sql_query.format(
                 table_name=db_interface.tables["portfolios"].name
             )

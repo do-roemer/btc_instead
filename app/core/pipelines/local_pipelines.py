@@ -1,4 +1,7 @@
 import json
+from datetime import timedelta
+from datetime import datetime 
+import time
 
 from app.core.utils.utils import set_logger
 import app.core.secret_handler as secrets
@@ -8,9 +11,10 @@ from app.core.services.process_asset import AssetProcessor
 from app.core.fetcher.reddit import RedditFetcher
 from app.core.database.db_interface import DatabaseInterface
 from app.core.fetcher.crypto_currency import CryptoCurrencyFetcher
-from app.core.entities.portfolio import Purchase
+from app.core.entities.purchase import Purchase
 from app.core.database.asset_db_handler import (
-    get_tracked_crypto_currency_in_db
+    get_tracked_crypto_currency_in_db,
+    get_asset_price_from_db_by_iso_week_year
 )
 from app.core.app_config import get_config
 
@@ -49,19 +53,119 @@ def redditposts_processor_pipeline(
     logger.info("Initialized portfolios.")
 
 
-def evaluate_portfolios_pipeline(
+def evaluate_portfolio_pipeline(
     source: str,
-    source_ids: list[str],
-    portfolio_processor: PortfolioProcessor
+    source_id: str,
+    portfolio_processor: PortfolioProcessor,
+    cc_fetcher: CryptoCurrencyFetcher,
+    asset_processor: AssetProcessor
 ):
     """
     Evaluate portfolios based on source IDs.
     """
-    for source_id in source_ids:
-        portfolio = portfolio_processor.evaluate_portfolio(
+    portfolio = portfolio_processor.get_portfolio_by_source_id_from_db(
             source=source,
             source_id=source_id
         )
+    purchases = portfolio_processor.get_purchases_for_portfolio_from_db(
+        source=source,
+        source_id=source_id
+    )
+
+    for purchase in purchases:
+        coinids = asset_processor.get_provider_coin_ids(
+            name=purchase.name,
+            abbreviation=purchase.abbreviation
+        )
+        if not coinids:
+            logger.error(
+                f"Coin IDs for {purchase.name} ({purchase.abbreviation}) "
+                f"not found in the database."
+            )
+            continue
+        current_value_dict = cc_fetcher.fetch_current_coin_price(coinids)
+        purchase.update_values(
+            current_value=current_value_dict["price"]
+        )
+        portfolio.add_purchase(purchase)
+
+    current_btc_price = cc_fetcher.fetch_current_coin_price(
+        asset_processor.get_provider_coin_ids(
+            name='bitcoin',
+            abbreviation='btc'
+        )
+    )
+
+    past_btc_price = get_asset_price_from_db_by_iso_week_year(
+        db_interface=portfolio_processor.db_interface,
+        name="bitcoin",
+        abbreviation="btc",
+        iso_week=portfolio.created_date.isocalendar()[1],
+        iso_year=portfolio.created_date.isocalendar()[0],
+        dictionary_cursor=True
+    )
+    if not past_btc_price:
+        logger.error(
+            f"Bitcoin price for week {portfolio.created_date.isocalendar()[1]} "
+            f"of year {portfolio.created_date.isocalendar()[0]} not found in the database."
+        )
+        return None
+    portfolio = portfolio_processor.evaluate_portfolio(
+        portfolio,
+        current_btc_price["price"],
+        past_btc_price["price"]
+        )
+
+
+def extract_and_save_cc_prices_of_past_year_pipeline(
+    asset_processor: AssetProcessor,
+    cc_fetcher: CryptoCurrencyFetcher,
+    name: str,
+    abbreviation: str,
+    currency: str
+):
+    today = datetime.today()
+    asset_data = asset_processor.get_asset_from_db(
+        name=name,
+        abbreviation=abbreviation
+    )
+    if not asset_data:
+        logger.error(
+            f"Asset {name} ({abbreviation}) not found in the database."
+        )
+        return None
+    for i in range(52):
+        week_date = today - timedelta(weeks=i)
+        # Get Monday of the week
+        monday = week_date - timedelta(days=week_date.weekday())
+        iso_year, iso_week, _ = monday.isocalendar()
+        cc_price = \
+            cc_fetcher.fetch_cc_data_for_iso_week_from_coin_gecko(
+                coin_id=asset_data["coin_gecko_id"],
+                iso_week=iso_week,
+                iso_year=iso_year
+            )
+        if asset_processor.cc_price_is_tracked(
+            name=name,
+            abbreviation=asset_data["abbreviation"],
+            iso_week=iso_week,
+            iso_year=iso_year
+        ):
+            logger.info(
+                f"Crypto currency {name} ({abbreviation}) price for "
+                f"week {iso_week} of {iso_year} is already tracked."
+            )
+            continue
+        asset_processor.upload_crypto_currency_price_to_db(
+                name=name,
+                abbreviation=asset_data["abbreviation"],
+                price=cc_price,
+                date=monday,
+                iso_week=iso_week,
+                iso_year=iso_year,
+                currency=currency
+            )
+        time.sleep(10)      
 
 
 def upload_portfolio_purchases_to_db_pipeline(

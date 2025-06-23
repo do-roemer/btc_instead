@@ -34,14 +34,29 @@ UPDATE_PORTFOLIO_STATUS_OF_POST = """
         WHERE post_id = %s
         """
 
+UPDATE_PORTFOLIO_TEMPLATE = """
+        UPDATE {table_name} SET
+            total_investment = %s,
+            current_value = %s,
+            profit_percentage = %s,
+            profit_total = %s,
+            btci_current_value = %s,
+            btci_profit_percentage = %s,
+            btci_profit_total = %s,
+            updated_date = %s,
+            btci_start_amount = %s
+        WHERE source = %s AND source_id = %s
+        """
+
 INSERT_NEW_PORTFOLIO_TEMPLATE = """
         INSERT INTO {table_name} (
             source, source_id, total_investment, start_value,
             current_value, profit_percentage, profit_total,
             btci_current_value, btci_profit_percentage,
-            btci_profit_total, created_date, updated_date
+            btci_profit_total, created_date, updated_date,
+            btci_start_amount
         ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-            %s, %s)
+            %s, %s, %s)
         ON DUPLICATE KEY UPDATE
             total_investment = VALUES(total_investment),
             start_value = VALUES(start_value),
@@ -51,7 +66,9 @@ INSERT_NEW_PORTFOLIO_TEMPLATE = """
             btci_current_value = VALUES(btci_current_value),
             btci_profit_percentage = VALUES(btci_profit_percentage),
             btci_profit_total = VALUES(btci_profit_total),
-            updated_date = VALUES(updated_date)
+            created_date = VALUES(created_date),
+            updated_date = VALUES(updated_date),
+            btci_start_amount = VALUES(btci_start_amount)
         """
 
 INSERT_CRYPTO_CURRENCY_PRICE_TEMPLATE = """
