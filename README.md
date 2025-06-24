@@ -114,7 +114,7 @@ Project Link: [https://github.com/do-roemer/btc_instead](https://github.com/do-r
 
 A big thank you to the following resources that made this project possible:
 *   [CoinGecko API](https://www.coingecko.com/en/api)
-*   [Coin Market Cap API] (https://coinmarketcap.com/api/)
+*   [Coin Market Cap API](https://coinmarketcap.com/api/)
 
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
