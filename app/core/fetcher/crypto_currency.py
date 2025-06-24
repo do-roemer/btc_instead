@@ -169,7 +169,7 @@ class CryptoCurrencyFetcher():
                     f"Warning: No market data found for {coin_id} on {date_str}.")
                 price = None
         except requests.exceptions.RequestException as e:
-            logger.error(f"Error fetching data from CoinGecko: {e}")
+            logger.warning(f"Error fetching data from CoinGecko: {e}")
             price = None
         return price
 
@@ -181,9 +181,12 @@ class CryptoCurrencyFetcher():
         """
         Fetches the current week's price for a cryptocurrency from CoinGecko or CoinMarketCap.
         Args:
-            coin_ids (dict): A dictionary containing the CoinGecko and CoinMarketCap IDs of the cryptocurrency.
-                             Example: {"coin_gecko": "bitcoin", "coin_market_cap": "bitcoin"}
-            vs_currency (str): The currency to get the price in (default is 'usd').
+            coin_ids (dict): A dictionary containing the CoinGecko and
+                CoinMarketCap IDs of the cryptocurrency.
+                Example: {"coin_gecko": "bitcoin", "coin_market_cap":
+                "bitcoin"}
+            vs_currency (str): The currency to get the price in
+            (default is 'usd').
         Returns:
             dict: A dictionary containing the price, date, and error status.
                   Example: {
@@ -205,13 +208,27 @@ class CryptoCurrencyFetcher():
             vs_currency=vs_currency
         )
         if coin_gecko_price is None:
-            price = self.get_current_price_from_cmc(
+            cmc_price = self.get_current_price_from_cmc(
                 coin_id=coin_ids["coin_market_cap"],
                 vs_currency=vs_currency
             )
+            if cmc_price:
+                logger.info(
+                    f"Fetched price from CoinMarketCap for {coin_ids['coin_market_cap']}: {cmc_price}"
+                )
+                price = cmc_price
         else:
             price = coin_gecko_price
-
+            logger.info(
+                f"Fetched price from CoinGecko for {coin_ids['coin_gecko']}: {price}"
+            )
+        if price is None:
+            result_dict["is_error"] = True
+            result_dict["error_message"] = (
+                f"Failed to fetch price for {coin_ids['coin_gecko']} "
+                f"from both CoinGecko and CoinMarketCap."
+            )
+            return result_dict
         result_dict["date"] = datetime.today().strftime(
             app_config.get("mysql_column_format").get('date'))
         result_dict["price"] = price
@@ -242,7 +259,7 @@ class CryptoCurrencyFetcher():
                     coin_id=coin_id,
                     iso_week=iso_week,
                     iso_year=iso_year
-                )            
+                )
             }
         return results
 
@@ -253,16 +270,18 @@ class CryptoCurrencyFetcher():
         iso_year: int,
     ):
         """
-        Fetches the price of a given cryptocurrency on a specific date from the CoinGecko API.
+        Fetches the price of a given cryptocurrency on a specific
+        date from the CoinGecko API.
 
-        :param coin_id: The CoinGecko ID of the cryptocurrency (e.g., 'bitcoin', 'ethereum').
+        :param coin_id: The CoinGecko ID of the cryptocurrency
+            (e.g., 'bitcoin', 'ethereum').
         :param iso_week: The ISO week number (1-53).
         :param iso_year: The ISO year (e.g., 2023).
         :return: The price in USD or an error message.
-    
+
         :return: The price in USD or an error message.
         """
-        
+
         target_date = datetime.fromisocalendar(iso_year, iso_week, 1)
         target_date = target_date.strftime("%d-%m-%Y")  # Format as dd-mm-yyyy
         url = f"https://api.coingecko.com/api/v3/coins/{coin_id}/history?date={target_date}"

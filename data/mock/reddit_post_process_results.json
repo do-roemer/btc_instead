@@ -6,192 +6,28 @@
         {
           "name": "Bitcoin",
           "abbreviation": "BTC",
-          "amount": 0.035227,
-          "price": 3699.89,
-          "currency": "USD"
-        },
-        {
-          "name": "Pepe",
-          "abbreviation": "PEPE",
-          "amount": 89054871.09,
-          "price": 1360.31,
-          "currency": "USD"
-        },
-        {
-          "name": "Hedera",
-          "abbreviation": "HBAR",
-          "amount": 3635.76,
-          "price": 1207.4,
-          "currency": "USD"
-        },
-        {
-          "name": "AIOZ Network",
-          "abbreviation": "AIOZ",
-          "amount": 1500.42,
-          "price": 1193.65,
-          "currency": "USD"
-        },
-        {
-          "name": "Sui",
-          "abbreviation": "SUI",
-          "amount": 200.49,
-          "price": 834.69,
-          "currency": "USD"
-        },
-        {
-          "name": "XRP",
-          "abbreviation": "XRP",
-          "amount": 250.76,
-          "price": 782.39,
-          "currency": "USD"
-        },
-        {
-          "name": "SuperVerse",
-          "abbreviation": "SUPER",
-          "amount": 757.91,
-          "price": 766.95,
+          "amount": null,
+          "price": 650.63,
           "currency": "USD"
         },
         {
           "name": "Solana",
           "abbreviation": "SOL",
-          "amount": 0.072977,
-          "price": 18.9,
+          "amount": null,
+          "price": 160.22,
           "currency": "USD"
         },
         {
-          "name": "Chainlink",
-          "abbreviation": "LINK",
-          "amount": 30.09,
-          "price": 757.89,
-          "currency": "USD"
-        },
-        {
-          "name": "Render",
-          "abbreviation": "RENDER",
-          "amount": 80.82,
-          "price": 564.85,
-          "currency": "USD"
-        },
-        {
-          "name": "NEAR Protocol",
-          "abbreviation": "NEAR",
-          "amount": 100.58,
-          "price": 498.11,
-          "currency": "USD"
-        },
-        {
-          "name": "Sei",
-          "abbreviation": "SEI",
-          "amount": 1129.87,
-          "price": 394.66,
-          "currency": "USD"
-        },
-        {
-          "name": "Avalanche",
-          "abbreviation": "AVAX",
-          "amount": 10.01,
-          "price": 367.1,
-          "currency": "USD"
-        },
-        {
-          "name": "Ondo Finance",
-          "abbreviation": "ONDO",
-          "amount": 250.0,
-          "price": 362.65,
-          "currency": "USD"
-        },
-        {
-          "name": "Axelar",
-          "abbreviation": "AXL",
-          "amount": 529.13,
-          "price": 333.83,
-          "currency": "USD"
-        },
-        {
-          "name": "Velodrome Finance",
-          "abbreviation": "VELO",
-          "amount": 3015.49,
-          "price": 329.05,
-          "currency": "USD"
-        },
-        {
-          "name": "Aerodrome Finance",
-          "abbreviation": "AERO",
-          "amount": 315.24,
-          "price": 320.94,
-          "currency": "USD"
-        },
-        {
-          "name": "Degen",
-          "abbreviation": "DEGEN",
-          "amount": 37480.27,
-          "price": 261.2,
-          "currency": "USD"
-        },
-        {
-          "name": "Stellar Lumens",
-          "abbreviation": "XLM",
-          "amount": 622.16,
-          "price": 260.21,
-          "currency": "USD"
-        },
-        {
-          "name": "Algorand",
-          "abbreviation": "ALGO",
-          "amount": 500.0,
-          "price": 200.3,
-          "currency": "USD"
-        },
-        {
-          "name": "Internet Computer",
-          "abbreviation": "ICP",
-          "amount": 20.0,
-          "price": 183.61,
-          "currency": "USD"
-        },
-        {
-          "name": "Echelon Prime",
-          "abbreviation": "PRIME",
-          "amount": 10.0,
-          "price": 102.74,
+          "name": "Ethereum",
+          "abbreviation": "ETH",
+          "amount": null,
+          "price": 115.99,
           "currency": "USD"
         }
       ]
     },
     "error": false,
-    "source_id": "1i9txgu",
-    "created_date": "2025-01-25T00:00:00"
-  },
-  {
-    "result": {
-      "is_portfolio": true,
-      "positions": [
-        {
-          "name": "SolCex",
-          "abbreviation": "SOLCEX",
-          "amount": 577790.0,
-          "price": 2619.8,
-          "currency": "USD"
-        },
-        {
-          "name": "SolCard",
-          "abbreviation": "SOLC",
-          "amount": 56685.53248,
-          "price": 1972.36,
-          "currency": "USD"
-        },
-        {
-          "name": "GameStop",
-          "abbreviation": "GME",
-          "amount": 435510.0,
-          "price": 858.49,
-          "currency": "USD"
-        }
-      ]
-    },
-    "error": false,
-    "source_id": "1l1smbv",
+    "source_id": "1l1oq5x",
     "created_date": "2025-06-02T00:00:00"
   }
 ]

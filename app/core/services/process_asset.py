@@ -10,6 +10,7 @@ from app.core.database.asset_db_handler import (
     get_coin_ids_for_providers,
     crypto_currency_is_tracked_in_db,
     get_single_asset_from_db,
+    get_asset_price_from_db_by_iso_week_year,
     cc_price_is_tracked_in_db
 )
 from app.core.fetcher.crypto_currency import CryptoCurrencyFetcher
@@ -91,6 +92,25 @@ class AssetProcessor:
                 abbreviation=abbreviation
             )
         return coin_ids
+
+    def get_asset_price_from_db_by_iso_week_year(
+        self,
+        name: str,
+        abbreviation: str,
+        iso_week: int,
+        iso_year: int
+    ):
+        """
+        Get the asset price from the database by ISO week and year.
+        """
+        return get_asset_price_from_db_by_iso_week_year(
+            db_interface=self.db_interface,
+            name=name,
+            abbreviation=abbreviation,
+            iso_week=iso_week,
+            iso_year=iso_year,
+            dictionary_cursor=True
+        )
 
     def process_asset(
         self,
@@ -195,7 +215,7 @@ class AssetProcessor:
                 provider_coin_id=provider_coin_id
             )
 
-    def cc_price_is_tracked(
+    def cc_price_of_current_iso_week_is_tracked(
         self,
         name: str,
         abbreviation: str,

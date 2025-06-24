@@ -6,7 +6,7 @@ from app.core.fetcher.reddit import RedditFetcher
 from app.core.services.process_portfolio import PortfolioProcessor
 from app.core.fetcher.crypto_currency import CryptoCurrencyFetcher
 from app.core.pipelines.local_pipelines import (
-    redditposts_processor_pipeline,
+    run_url_to_portfolio_evaluation_pipeline,
     fetch_and_upload_weeklsy_crypto_prices_to_db_pipeline,
     upload_portfolio_purchases_to_db_pipeline,
     evaluate_portfolio_pipeline,
@@ -42,6 +42,15 @@ reddit_fetcher = RedditFetcher(
                 username=secret_config.get("REDDIT_USERNAME"),
                 password=secret_config.get("REDDIT_PASSWORD")
             )
+
+run_url_to_portfolio_evaluation_pipeline(
+    urls=["https://www.reddit.com/r/WallStreetBetsCrypto/comments/1l1oq5x/rate_me/"],
+    rp_processor=rp_processor,
+    portfolio_processor=portfolio_processor,
+    asset_processor=asset_processor,
+    cc_fetcher=cc_fetcher,
+    reddit_fetcher=reddit_fetcher
+)
 # extract_and_save_cc_prices_of_past_year_pipeline(
 #     cc_fetcher=cc_fetcher,
 #     asset_processor=asset_processor,
@@ -49,13 +58,13 @@ reddit_fetcher = RedditFetcher(
 #     abbreviation="btc",
 #     currency="usd"
 # )
-evaluate_portfolio_pipeline(
-    source="reddit",
-    source_id="1l1smbv",
-    portfolio_processor=portfolio_processor,
-    cc_fetcher=cc_fetcher,
-    asset_processor=asset_processor
-)
+#evaluate_portfolio_pipeline(
+#    source="reddit",
+#    source_id="1i9txgu",
+#    portfolio_processor=portfolio_processor,
+#    cc_fetcher=cc_fetcher,
+#    asset_processor=asset_processor
+#)
 #redditposts_processor_pipeline(
 #    rp_processor=rp_processor,
 #    portfolio_processor=portfolio_processor,

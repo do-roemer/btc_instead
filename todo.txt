@@ -1,2 +1,0 @@
-- write ingestion of crypto currency price itno the DB
-- write a checker for Crypto Currency names and abbreviation. Or a provider if either abbreviation or full name is given

@@ -13,7 +13,9 @@ from app.core.database.portfolio_db_handler import (
     insert_portfolio_to_db,
     upload_purchase_to_db,
     get_purchases_for_portfolio,
-    get_portfolio_by_source_id
+    get_portfolio_by_source_id,
+    update_portfolio_in_db,
+    portfolio_already_exists
 )
 secret_config = secrets.get_config()
 app_config = get_config()
@@ -42,6 +44,15 @@ class PortfolioProcessor:
             created_date=created_date,
         )
 
+    def portfolio_already_exists(
+        self,
+        source: str,
+        source_id: str
+    ) -> bool:
+        return portfolio_already_exists(
+            self.db_interface, source=source, source_id=source_id
+        )
+
     def initialize_portfolio_in_db(
         self,
         source: str,
@@ -62,6 +73,28 @@ class PortfolioProcessor:
             is_new=True
         )
 
+    def update_portfolio_in_db(
+        self,
+        portfolio: Portfolio
+    ):
+        """
+        Update the portfolio in the database.
+        """
+        if not portfolio:
+            logger.error("Portfolio is None, cannot update in DB.")
+            return
+        if not portfolio.source or not portfolio.source_id:
+            logger.error(
+                "Portfolio source or source_id is missing, cannot update in DB."
+            )
+            return
+        if not portfolio.updated_date:
+            portfolio.updated_date = datetime.now().strftime("%Y-%m-%d")
+        update_portfolio_in_db(
+            db_interface=self.db_interface,
+            portfolio=portfolio
+        )
+
     def evaluate_portfolio(
             self,
             portfolio: Portfolio,
@@ -71,18 +104,20 @@ class PortfolioProcessor:
         """
         Calculate the current value and profit of the portfolio.
         """
-        total_investment = sum(float(purchase.total_purchase_value) for purchase in portfolio.purchases)
-        current_value = sum(float(purchase.current_value) * float(purchase.amount)
+        total_investment = sum(float(purchase.total_purchase_value)
+                               for purchase in portfolio.purchases)
+        current_value = sum(float(purchase.current_value) *
+                            float(purchase.amount)
                             for purchase in portfolio.purchases)
         profit_total = current_value - total_investment
         profit_percentage = (profit_total / total_investment) * 100
         update_date = datetime.now().strftime("%Y-%m-%d")
 
         # btc instead values
-        btci_start_value = total_investment / float(past_btc_price)
-        btci_current_value = total_investment / float(current_btc_price)
-        btci_profit_total = btci_current_value - btci_start_value
-        btci_profit_percentage = (btci_profit_total / btci_start_value) * 100
+        btci_start_amount = total_investment / float(past_btc_price)
+        btci_current_value = btci_start_amount * float(current_btc_price)
+        btci_profit_total = btci_current_value - total_investment
+        btci_profit_percentage = (btci_profit_total / total_investment) * 100
 
         # Update the portfolio with the calculated values
         portfolio.update_values(
@@ -91,7 +126,7 @@ class PortfolioProcessor:
             profit_percentage=profit_percentage,
             profit_total=profit_total,
             updated_date=update_date,
-            btci_start_value=btci_start_value,
+            btci_start_amount=btci_start_amount,
             btci_current_value=btci_current_value,
             btci_profit_total=btci_profit_total,
             btci_profit_percentage=btci_profit_percentage

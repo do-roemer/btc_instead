@@ -1,6 +1,6 @@
-import logging
 import json
 
+from app.core.utils.utils import set_logger
 from app.core.app_config import get_config
 from app.core.entities.reddit_post import RedditPost
 from app.core.database.queries import (
@@ -8,11 +8,7 @@ from app.core.database.queries import (
     UPDATE_PORTFOLIO_STATUS_OF_POST
 )
 app_config = get_config()
-
-logging.basicConfig(
-    level=logging.INFO,
-    format=app_config.get('logging').get('format'),
-)
+logger = set_logger(name=__name__)
 
 
 def get_unprocessed_reddit_posts(db_interface, n_posts):
@@ -25,7 +21,7 @@ def get_unprocessed_reddit_posts(db_interface, n_posts):
         """
     results = db_interface.execute_query(query)
     if results:
-        logging.info(
+        logger.info(
             f"""Fetched {len(results)} unprocessed reddit posts
             from {db_interface.tables["reddit_posts"].name}
             (PyMySQL).""")
@@ -34,13 +30,13 @@ def get_unprocessed_reddit_posts(db_interface, n_posts):
             reddit_posts.append(RedditPost.from_db_row(post))
         return reddit_posts
     else:
-        logging.warning("No unprocessed posts found.")
+        logger.warning("No unprocessed posts found.")
         return []
 
 
 def delete_reddit_posts(db_interface, post_ids: list[str]):
     if not post_ids:
-        logging.warning("No post IDs provided for deletion.")
+        logger.warning("No post IDs provided for deletion.")
         return 0
 
     # Use a parameterized query to prevent SQL injection
@@ -72,9 +68,9 @@ def update_portfolio_status_in_db(
             post_id
         )
         db_interface.execute_query(query, values)
-        logging.info(f"Updated is_portfolio for post_id: {post_id}")
+        logger.info(f"Updated is_portfolio for post_id: {post_id}")
     except Exception as e:
-        logging.error(
+        logger.error(
             f"""Failed to update is_portfolio
             for post_id: {post_id}. Error: {e}""")
 
@@ -83,7 +79,7 @@ def insert_reddit_posts_to_db(
     db_interface,
     reddit_posts: list[dict]
 ):
-    logging.info(
+    logger.info(
             f"Starting to insert {len(reddit_posts)} reddit posts into DB.")
     processed_posts = []
     if db_interface.tables["reddit_posts"].columns:
@@ -100,7 +96,7 @@ def insert_reddit_posts_to_db(
                                 processed_post[column])
             processed_posts.append(processed_post)
     else:
-        logging.error(
+        logger.error(
             "Cannot insert reddit posts: table columns not loaded.")
         return None
     post_data_tuples = [
@@ -119,14 +115,14 @@ def insert_reddit_posts_to_db(
     ]
 
     if not post_data_tuples:
-        logging.warning(
+        logger.warning(
             "No valid post data tuples to insert after processing.")
         return None
 
     # Query formatting remains the same
     final_query = INSERT_REDDIT_POST_UPDATE_TEMPLATE.format(
         table_name=db_interface.tables["reddit_posts"].name)
-    logging.info(
+    logger.info(
         f"""Inserting {len(post_data_tuples)} reddit posts
         into {db_interface.tables["reddit_posts"].name} (PyMySQL).""")
     for post_data in post_data_tuples:
@@ -139,7 +135,7 @@ def get_reddit_posts(
         post_ids: list[str]
 ) -> list[RedditPost]:
     if not post_ids:
-        logging.warning("No post IDs provided for retrieval.")
+        logger.warning("No post IDs provided for retrieval.")
         return []
 
     # Use a parameterized query to prevent SQL injection
@@ -147,7 +143,7 @@ def get_reddit_posts(
         SELECT * FROM {db_interface.tables["reddit_posts"].name}
         WHERE post_id IN ({','.join(['%s'] * len(post_ids))})
     """
-    logging.info(
+    logger.info(
         f"""Fetching reddit posts by post_id from {
             db_interface.tables["reddit_posts"].name}
         (PyMySQL).""")            

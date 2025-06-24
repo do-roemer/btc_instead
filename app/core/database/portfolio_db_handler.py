@@ -78,7 +78,7 @@ def upload_purchase_to_db(
             exc_info=True
         )
         error = True
-    return error 
+    return error
 
 
 def get_purchases_for_portfolio(
@@ -137,6 +137,7 @@ def get_portfolio_by_source_id(
         return None
     return portfolio[0]
 
+
 def update_portfolio_in_db(
         db_interface: DatabaseInterface,
         portfolio: Portfolio
@@ -168,7 +169,7 @@ def update_portfolio_in_db(
             processed_portfolio.btci_profit_percentage,
             processed_portfolio.btci_profit_total,
             processed_portfolio.updated_date,
-            processed_portfolio.btci_start_value,
+            processed_portfolio.btci_start_amount,
             processed_portfolio.source,
             processed_portfolio.source_id
         )
@@ -180,7 +181,10 @@ def update_portfolio_in_db(
         db_interface.execute_query(
             sql_query, portfolio_data_tuple
         )
-
+        logger.info(
+            f"""Portfolio updated successfully for source
+             {portfolio.source} and id: {portfolio.source_id}"""
+        )
     except Exception as e:
         logger.error(
             f"Error updating portfolio: {e}",
@@ -230,7 +234,7 @@ def insert_portfolio_to_db(
                 processed_portfolio.btci_profit_total,
                 processed_portfolio.created_date,
                 processed_portfolio.updated_date,
-                processed_portfolio.btci_start_value
+                processed_portfolio.btci_current_value
             )
 
             if is_new:

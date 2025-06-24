@@ -1,6 +1,6 @@
 import json
 from datetime import timedelta
-from datetime import datetime 
+from datetime import datetime
 import time
 
 from app.core.utils.utils import set_logger
@@ -13,9 +13,9 @@ from app.core.database.db_interface import DatabaseInterface
 from app.core.fetcher.crypto_currency import CryptoCurrencyFetcher
 from app.core.entities.purchase import Purchase
 from app.core.database.asset_db_handler import (
-    get_tracked_crypto_currency_in_db,
-    get_asset_price_from_db_by_iso_week_year
+    get_tracked_crypto_currency_in_db
 )
+from app.core.entities.portfolio import Portfolio
 from app.core.app_config import get_config
 
 app_config = get_config()
@@ -23,15 +23,19 @@ secret_config = secrets.get_config()
 logger = set_logger(name=__name__)
 
 
-def redditposts_processor_pipeline(
-    reddit_ids: list[str],
+def reddit_posts_processor_pipeline(
+    reddit_id: str,
     rp_processor: RedditPostProcessor,
     portfolio_processor: PortfolioProcessor,
     asset_processor:  AssetProcessor,
-    cc_fetcher: CryptoCurrencyFetcher,
+    cc_fetcher: CryptoCurrencyFetcher
 ):
+    """
+    Takes a list of reddit post ids, get their data from the DB, runs
+    a portfolio process on it and uploads the portfolio to the DB.
+    """
     reddit_process_results = rp_processor.process(
-        reddit_post_ids=reddit_ids
+        reddit_post_id=reddit_id
     )
 
     # Initialize portfolios in the database for each processed Reddit post
@@ -53,6 +57,97 @@ def redditposts_processor_pipeline(
     logger.info("Initialized portfolios.")
 
 
+def run_url_to_portfolio_evaluation_pipeline(
+    urls: list[str],
+    rp_processor: RedditPostProcessor,
+    portfolio_processor: PortfolioProcessor,
+    asset_processor:  AssetProcessor,
+    cc_fetcher: CryptoCurrencyFetcher,
+    reddit_fetcher: RedditFetcher
+):
+    uploaded_reddit_ids = fetch_reddit_post_and_upload_to_db_pipeline(
+        urls=urls,
+        reddit_fetcher=reddit_fetcher,
+        reddit_post_processor=rp_processor
+    )
+    for reddit_post_id in uploaded_reddit_ids:
+        if not portfolio_processor.portfolio_already_exists(
+            "reddit",
+            reddit_post_id
+        ):
+            reddit_posts_processor_pipeline(
+                reddit_id=reddit_post_id,
+                rp_processor=rp_processor,
+                portfolio_processor=portfolio_processor,
+                asset_processor=asset_processor,
+                cc_fetcher=cc_fetcher
+            )
+
+        evaluate_portfolio_pipeline(
+            source="reddit",
+            source_id=reddit_post_id,
+            portfolio_processor=portfolio_processor,
+            cc_fetcher=cc_fetcher,
+            asset_processor=asset_processor
+        )
+
+
+def process_purchases_pipeline(
+    purchases: list[Purchase],
+    asset_processor: AssetProcessor,
+    cc_fetcher: CryptoCurrencyFetcher    
+) -> list[Purchase]:
+    current_date = datetime.today()
+    for purchase in purchases:
+
+        if asset_processor.cc_price_of_current_iso_week_is_tracked(
+            name=purchase.name,
+            abbreviation=purchase.abbreviation,
+            iso_week=current_date.isocalendar()[1],
+            iso_year=current_date.isocalendar()[0]
+        ):
+            current_asset_price_data = asset_processor.\
+                get_asset_price_from_db_by_iso_week_year(
+                    name=purchase.name,
+                    abbreviation=purchase.abbreviation,
+                    iso_week=current_date.isocalendar()[1],
+                    iso_year=current_date.isocalendar()[0]
+                )
+            current_asset_price = current_asset_price_data["price"]
+        else:
+            coinids = asset_processor.get_provider_coin_ids(
+                name=purchase.name,
+                abbreviation=purchase.abbreviation
+            )
+            if not coinids:
+                logger.error(
+                    f"Coin IDs for {purchase.name} ({purchase.abbreviation}) "
+                    f"not found in the database."
+                )
+                continue
+            current_value_dict = cc_fetcher.fetch_current_coin_price(coinids)
+            _ = asset_processor.upload_crypto_currency_price_to_db(
+                name=purchase.name,
+                abbreviation=purchase.abbreviation,
+                price=current_value_dict["price"],
+                date=current_date,
+                iso_week=current_date.isocalendar()[1],
+                iso_year=current_date.isocalendar()[0],
+                currency=current_value_dict.get("currency", "usd")
+            )
+            current_asset_price = current_value_dict["price"]
+            if current_asset_price is None:
+                logger.warning(
+                    f"Can't fetch current {purchase.name} price."
+                    " Abort pipeline."
+                )
+                return None
+            purchase.update_values(
+                current_value=current_asset_price
+            )
+        return purchases
+
+
 def evaluate_portfolio_pipeline(
     source: str,
     source_id: str,
@@ -72,49 +167,107 @@ def evaluate_portfolio_pipeline(
         source_id=source_id
     )
 
+    process_purchases_pipeline(
+        purchases=purchases,
+        asset_processor=asset_processor,
+        cc_fetcher=cc_fetcher
+    )
+    if purchases is None:
+        logger.warning(
+            "Failed to return a valid or complete list of purchases."
+            " Abort pipeline."
+        )
     for purchase in purchases:
-        coinids = asset_processor.get_provider_coin_ids(
-            name=purchase.name,
-            abbreviation=purchase.abbreviation
-        )
-        if not coinids:
-            logger.error(
-                f"Coin IDs for {purchase.name} ({purchase.abbreviation}) "
-                f"not found in the database."
-            )
-            continue
-        current_value_dict = cc_fetcher.fetch_current_coin_price(coinids)
-        purchase.update_values(
-            current_value=current_value_dict["price"]
-        )
         portfolio.add_purchase(purchase)
 
-    current_btc_price = cc_fetcher.fetch_current_coin_price(
-        asset_processor.get_provider_coin_ids(
-            name='bitcoin',
-            abbreviation='btc'
-        )
+    current_btc_price, past_btc_price_data = get_current_and_past_btc_price(
+        asset_processor=asset_processor,
+        cc_fetcher=cc_fetcher,
+        portfolio=portfolio,
+        past_iso_week=portfolio.created_date.isocalendar()[1],
+        past_iso_year=portfolio.created_date.isocalendar()[0]
     )
-
-    past_btc_price = get_asset_price_from_db_by_iso_week_year(
-        db_interface=portfolio_processor.db_interface,
-        name="bitcoin",
-        abbreviation="btc",
-        iso_week=portfolio.created_date.isocalendar()[1],
-        iso_year=portfolio.created_date.isocalendar()[0],
-        dictionary_cursor=True
-    )
-    if not past_btc_price:
-        logger.error(
-            f"Bitcoin price for week {portfolio.created_date.isocalendar()[1]} "
-            f"of year {portfolio.created_date.isocalendar()[0]} not found in the database."
-        )
+    if current_btc_price is None or past_btc_price_data is None:
+        logger.warning("Can't fetch BTC price data. Abort pipeline.")
         return None
+
     portfolio = portfolio_processor.evaluate_portfolio(
         portfolio,
-        current_btc_price["price"],
-        past_btc_price["price"]
+        current_btc_price,
+        past_btc_price_data
         )
+
+    portfolio_processor.update_portfolio_in_db(
+        portfolio=portfolio
+    )
+    logger.info(
+        f"Portfolio {source} ({source_id})"
+        " evaluated and updated in the database."
+    )
+
+    print(portfolio.format_portfolio_summary())
+    return portfolio
+
+
+def get_current_and_past_btc_price(
+        asset_processor: AssetProcessor,
+        cc_fetcher: CryptoCurrencyFetcher,
+        portfolio: Portfolio,
+        past_iso_week: int,
+        past_iso_year: int
+):
+    """Returns the current and past BTC price data."""
+    current_date = datetime.today()
+    current_btc_price = None
+    past_btc_price_data = None
+    # Get current BTC price data
+    if asset_processor.cc_price_of_current_iso_week_is_tracked(
+            name='bitcoin',
+            abbreviation='btc',
+            iso_week=current_date.isocalendar()[1],
+            iso_year=current_date.isocalendar()[0]
+    ):
+        current_asset_price_data = asset_processor.\
+                get_asset_price_from_db_by_iso_week_year(
+                    name='bitcoin',
+                    abbreviation='btc',
+                    iso_week=current_date.isocalendar()[1],
+                    iso_year=current_date.isocalendar()[0]
+                )
+    else:
+        current_asset_price_data = cc_fetcher.fetch_current_coin_price(
+            asset_processor.get_provider_coin_ids(
+                name='bitcoin',
+                abbreviation='btc'
+            )
+        )
+    try:
+        current_btc_price = current_asset_price_data["price"]
+    except KeyError:
+        logger.error("Can't fetch current BTC price. Abort pipeline.")
+        return None, None
+    if current_btc_price is None:
+        logger.warning("Can't fetch current BTC price. Abort pipeline.")
+        return None, None
+
+    # Get past BTC price data
+    past_btc_price_data = asset_processor.\
+        get_asset_price_from_db_by_iso_week_year(
+            name="bitcoin",
+            abbreviation="btc",
+            iso_week=past_iso_week,
+            iso_year=past_iso_year
+        )
+    if not past_btc_price_data:
+        logger.error(
+            f"""Bitcoin price for week
+            {portfolio.created_date.isocalendar()[1]}
+            of year {portfolio.created_date.isocalendar()[0]}
+            not found in the database.
+            """
+        )
+        return None, None
+    return current_btc_price, past_btc_price_data
 
 
 def extract_and_save_cc_prices_of_past_year_pipeline(
@@ -165,7 +318,7 @@ def extract_and_save_cc_prices_of_past_year_pipeline(
                 iso_year=iso_year,
                 currency=currency
             )
-        time.sleep(10)      
+        time.sleep(10)
 
 
 def upload_portfolio_purchases_to_db_pipeline(
@@ -184,7 +337,8 @@ def upload_portfolio_purchases_to_db_pipeline(
                             abbreviation=purchase["abbreviation"],
                             amount=purchase["amount"],
                             total_purchase_value=purchase["price"],
-                            purchase_date=portfolio_data['created_date'].split("T")[0],
+                            purchase_date=portfolio_data['created_date']
+                            .split("T")[0],
                             currency=purchase.get("currency", "usd"),
                         )
                     portfolio_processor.purchase_to_db(
@@ -224,7 +378,8 @@ def init_asset_into_db_pipeline(
             abbreviation=asset["abbreviation"]
         ):
             logger.info(
-                f"Crypto currency {asset['name']} ({asset['abbreviation']}) is already tracked."
+                f"Crypto currency {asset['name']} ({asset['abbreviation']})"
+                " is already tracked."
             )
             continue
         cmc_coin_id = cc_fetcher.find_coin_id(
@@ -273,7 +428,7 @@ def fetch_and_upload_weeklsy_crypto_prices_to_db_pipeline(
     if len(failed_assets) > 0:
         logger.warning(
             f"Failed to process the following assets: {failed_assets}"
-        )            
+        )
     logger.info("Uploaded weekly crypto prices to the database.")
 
 
@@ -282,10 +437,27 @@ def fetch_reddit_posts_from_url_pipeline(
     reddit_fetcher: RedditFetcher
 ):
     """
-    Fetch Reddit posts by IDs and process them.
+    Fetch Reddit posts by urls and process them.
     """
     results = reddit_fetcher.fetch_posts_by_post_url(
         urls=urls
     )
-    print(f"Fetched {len(results)} posts from URLs: {urls}")
-    print("Results:", results[0])
+    logger.info(f"Fetched {len(results)} posts from URLs: {urls}")
+    logger.info("Results:", results[0])
+    return results
+
+
+def fetch_reddit_post_and_upload_to_db_pipeline(
+        urls: list[str],
+        reddit_fetcher: RedditFetcher,
+        reddit_post_processor: RedditPostProcessor
+) -> list[str]:
+    """Takes reddit urls, fetches their date, uploads their info and returns
+    a list of the fetched and uploaded reddit posts"""
+    results = reddit_fetcher.fetch_posts_by_post_url(
+        urls=urls
+    )
+    reddit_post_processor.upload_reddit_post_to_db(
+        reddit_post_data_dicts=results
+    )
+    return [result["post_id"] for result in results]
