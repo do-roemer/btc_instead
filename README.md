@@ -66,9 +66,10 @@ This project was built with the following technologies:
 
 - [x] Fetch data from Subreddit and store it in MySQL DB
 - [x] Use Google Pro Vision and Gemini LLM to extract assets out of reddit posts and images
-- [x] Inital API endpoint to add reddit posts to the DB 
+- [x] Inital API endpoint to add reddit posts to the DB
+- [ ] An API endpoint that takes an URL and triggers the whole reddit post process and portfolio evaluation
 - [x] Create portfolios, connect it with the extracted assets and save it in DB
-- [ ] Add logic to compare the actual portfolio with the performance of a BTC only portfolio
+- [x] Add logic to compare the actual portfolio with the performance of a BTC only portfolio
 - [ ]  A simple frontend/dashboard to show the portfolios and their stats on a website
 
 - [x] Setup a server on a DigitalOcean droplet to run run the following services:
@@ -113,7 +114,7 @@ Project Link: [https://github.com/do-roemer/btc_instead](https://github.com/do-r
 
 A big thank you to the following resources that made this project possible:
 *   [CoinGecko API](https://www.coingecko.com/en/api)
-
+*   [Coin Market Cap API] (https://coinmarketcap.com/api/)
 
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
