@@ -1,6 +1,5 @@
 import json
 
-
 from app.core.database.db_interface import DatabaseInterface
 from app.core.utils.utils import set_logger
 from app.core.entities.portfolio import Portfolio
@@ -15,6 +14,7 @@ from app.core.database.queries import (
 app_config = get_config()
 
 logger = set_logger(name=__name__)
+
 
 
 def portfolio_already_exists(

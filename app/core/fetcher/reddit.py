@@ -46,6 +46,23 @@ class RedditFetcher():
                 f"""Failed to connect to praw API: {e}""")
             raise
 
+    def get_reddit_post_id_from_url(self, url: str) -> str:
+        """
+        Extract the Reddit post ID from a given URL.
+
+        Args:
+            url (str): The URL of the Reddit post.
+
+        Returns:
+            str: The Reddit post ID.
+        """
+        try:
+            submission = self.client.submission(url=url)
+            return submission.id
+        except Exception as e:
+            logging.error(f"Failed to extract post ID from URL {url}: {e}")
+            return None
+
     def fetching_posts(self, subreddit, limit=10):
         """
         Retrieve posts from a given subreddit.
@@ -63,18 +80,13 @@ class RedditFetcher():
 
     def fetch_posts_by_post_url(
             self,
-            urls: List[str]) -> list:
-        fetched_post_data = []
-        for url in urls:
-            try:
-                submission = self.client.submission(url=url)
-                post_data = self.get_post_data(submission)
-                logging.info(f"Fetched post: {post_data['title']}")
-                fetched_post_data.append(post_data)
-            except praw.exceptions.PRAWException as e:
-                logging.error(f"An error occurred while fetching {url}: {e}")
-            except Exception as e:
-                logging.error(f"An unexpected error occurred for {url}: {e}")
+            url: str) -> dict:
+        try:
+            submission = self.client.submission(url=url)
+            fetched_post_data = self.get_post_data(submission)
+            logging.info(f"Fetched post: {fetched_post_data['title']}")
+        except Exception as e:
+            logging.error(f"An unexpected error occurred for {url}: {e}")
         return fetched_post_data
 
     def get_new_posts(

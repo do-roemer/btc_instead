@@ -22,7 +22,7 @@ async def redditpost2db_pipeline(
 
     try:
         fetched_posts_data = reddit_fetcher.fetch_posts_by_post_url(
-            urls=[url]
+            url=url
         )
         # --- Insert data into Database ---
         if fetched_posts_data:

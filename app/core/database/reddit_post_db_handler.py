@@ -5,7 +5,7 @@ from app.core.app_config import get_config
 from app.core.entities.reddit_post import RedditPost
 from app.core.database.queries import (
     INSERT_REDDIT_POST_UPDATE_TEMPLATE,
-    UPDATE_PORTFOLIO_STATUS_OF_POST
+    UPDATE_PORTFOLIO_STATUS_OF_POST_TEMPLATE
 )
 app_config = get_config()
 logger = set_logger(name=__name__)
@@ -55,10 +55,10 @@ def update_portfolio_status_in_db(
         processed: bool = True
 ):
     """
-    Process the reddit posts and update the database.
+    Update the portfolio status of a Reddit post in the database.
     """
     try:
-        query = UPDATE_PORTFOLIO_STATUS_OF_POST.format(
+        query = UPDATE_PORTFOLIO_STATUS_OF_POST_TEMPLATE.format(
             table_name=db_interface.tables["reddit_posts"].name
         )
         values = (
@@ -77,44 +77,36 @@ def update_portfolio_status_in_db(
 
 def insert_reddit_posts_to_db(
     db_interface,
-    reddit_posts: list[dict]
+    reddit_post: dict
 ):
-    logger.info(
-            f"Starting to insert {len(reddit_posts)} reddit posts into DB.")
-    processed_posts = []
+    logger.debug("Starting to insert reddit post into DB.")
+    processed_post = reddit_post.copy()
     if db_interface.tables["reddit_posts"].columns:
         json_columns = db_interface.tables["reddit_posts"].\
                 get_json_columns()
-        for post in reddit_posts:
-            processed_post = post.copy()
-            for column in json_columns:
-                if column in processed_post and\
-                        processed_post[column] is not None:
-                    # Ensure data is not already a string before dumping
-                    if not isinstance(processed_post[column], str):
-                        processed_post[column] = json.dumps(
-                                processed_post[column])
-            processed_posts.append(processed_post)
+        for column in json_columns:
+            if column in processed_post and\
+                    processed_post[column] is not None:
+                # Ensure data is not already a string before dumping
+                if not isinstance(processed_post[column], str):
+                    processed_post[column] = json.dumps(
+                            processed_post[column])
     else:
-        logger.error(
-            "Cannot insert reddit posts: table columns not loaded.")
+        logger.error("Cannot insert reddit post: Table columns not loaded.")
         return None
-    post_data_tuples = [
-        (
-            p.get('post_id'), p.get('title'), p.get('username'),
-            p.get('created_utc'), p.get('created_date'), p.get('score'),
-            p.get('upvote_ratio'), p.get('num_comments'),
-            p.get('permalink'), p.get('user_url'), p.get('subreddit'),
-            p.get('post_text'), p.get('is_self'), p.get('stickied'),
-            p.get('spoiler'), p.get('locked'), p.get('is_gallery'),
-            p.get('is_direct_image_post'), p.get('flair_text'),
-            p.get('inline_images_in_text'), p.get('markdown_image_urls'),
-            p.get('gallery_img_urls'), p.get('image_post_url')
+    post_data_tuple = (
+            processed_post.get('post_id'), processed_post.get('title'), processed_post.get('username'),
+            processed_post.get('created_utc'), processed_post.get('created_date'), processed_post.get('score'),
+            processed_post.get('upvote_ratio'), processed_post.get('num_comments'),
+            processed_post.get('permalink'), processed_post.get('user_url'), processed_post.get('subreddit'),
+            processed_post.get('post_text'), processed_post.get('is_self'), processed_post.get('stickied'),
+            processed_post.get('spoiler'), processed_post.get('locked'), processed_post.get('is_gallery'),
+            processed_post.get('is_direct_image_post'), processed_post.get('flair_text'),
+            processed_post.get('inline_images_in_text'), processed_post.get('markdown_image_urls'),
+            processed_post.get('gallery_img_urls'), processed_post.get('image_post_url')
         )
-        for p in processed_posts
-    ]
 
-    if not post_data_tuples:
+    if not post_data_tuple:
         logger.warning(
             "No valid post data tuples to insert after processing.")
         return None
@@ -122,14 +114,40 @@ def insert_reddit_posts_to_db(
     # Query formatting remains the same
     final_query = INSERT_REDDIT_POST_UPDATE_TEMPLATE.format(
         table_name=db_interface.tables["reddit_posts"].name)
-    logger.info(
-        f"""Inserting {len(post_data_tuples)} reddit posts
-        into {db_interface.tables["reddit_posts"].name} (PyMySQL).""")
-    for post_data in post_data_tuples:
-        _ = db_interface.execute_query(
-            final_query, post_data)
     
+        
+    _ = db_interface.execute_query(final_query, post_data_tuple)
+    logger.info(
+        f"""Inserted reddit post {processed_post.get('post_id')}
+        into {db_interface.tables["reddit_posts"].name} (PyMySQL).""")
 
+
+def get_reddit_post_by_id_from_db(
+        db_interface,
+        post_id: str
+) -> RedditPost | None:
+    if not post_id:
+        logger.warning("No post ID provided for retrieval.")
+        return None
+
+    # Use a parameterized query to prevent SQL injection
+    select_query = f"""
+        SELECT * FROM {db_interface.tables["reddit_posts"].name}
+        WHERE post_id = %s
+    """
+    logger.info(
+        f"""Fetching reddit post by post_id from {
+            db_interface.tables["reddit_posts"].name}
+        (PyMySQL).""")
+    result = db_interface.execute_query(select_query, (post_id,))
+    
+    if result:
+        return RedditPost.from_db_row(result[0])
+    else:
+        logger.warning(f"No post found with post_id: {post_id}")
+        return None
+
+ 
 def get_reddit_posts(
         db_interface,
         post_ids: list[str]

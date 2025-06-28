@@ -13,6 +13,7 @@ from .service_prompts import (
 )
 from app.core.database.reddit_post_db_handler import (
     get_reddit_posts,
+    get_reddit_post_by_id_from_db,
     update_portfolio_status_in_db,
     insert_reddit_posts_to_db
 )
@@ -97,11 +98,11 @@ class RedditPostProcessor:
         )
         return vision_response
 
-    def upload_reddit_post_to_db(self, reddit_post_data_dicts: list[dict]):
+    def upload_reddit_post_to_db(self, reddit_post_data_dict: dict):
         insert_reddit_posts_to_db(
             self.db_interface,
-            reddit_post_data_dicts
-            )
+            reddit_post_data_dict
+        )
 
     def process_image_gallery(
             self,
@@ -177,7 +178,7 @@ class RedditPostProcessor:
     def process(
         self,
         reddit_post_id: str
-    ) -> list[dict]:
+    ) -> dict:
         """
         Process a list of Reddit post IDs to extract information from images
         associated with those posts. The function retrieves the posts from
@@ -196,56 +197,54 @@ class RedditPostProcessor:
         """
         if app_config["debug"]["is_debug"]:
             with open("data/mock/reddit_post_process_results.json", "r") as f:
-                process_result_dicts = json.load(f)
+                result_dict = json.load(f)
         else:
             
             logger.info(
                 f"""Processing {reddit_post_id}"""
             )
-            reddit_post_data = get_reddit_posts(
+            reddit_post_data = get_reddit_post_by_id_from_db(
                     db_interface=self.db_interface,
-                    post_ids=[reddit_post_id]
+                    post_id=reddit_post_id
                 )
-            process_result_dicts = []
             error = ""
-            for reddit_post in reddit_post_data:
-                result_dict = {
-                    "result": None,
-                    "error": False,
-                    "source_id": reddit_post.post_id,
-                    "created_date": reddit_post.created_date
-                }
-                try:
-                    if reddit_post.is_gallery:
-                        error, img_process_result_dict = \
-                            self.process_image_gallery(
-                                eval(reddit_post.gallery_image_urls)
-                            )
-                    elif reddit_post.is_direct_image_post and not \
-                            reddit_post.is_gallery:
-                        # If the post is a direct image post, process the image URL
-                        img_url = eval(reddit_post.image_post_url)[0]
-                        error, img_process_result_dict = self.process_img_url(
-                            image_url=img_url
+            result_dict = {
+                "result": None,
+                "error": False,
+                "source_id": reddit_post_data.post_id,
+                "created_date": reddit_post_data.created_date
+            }
+            try:
+                if reddit_post_data.is_gallery:
+                    error, img_process_result_dict = \
+                        self.process_image_gallery(
+                            eval(reddit_post_data.gallery_image_urls)
                         )
-
-                    result_dict["error"] = error
-                    result_dict["result"] = img_process_result_dict
-
-                    update_portfolio_status_in_db(
-                        db_interface=self.db_interface,
-                        post_id=reddit_post.post_id,
-                        is_portfolio=result_dict.get("result").get(
-                            "is_portfolio"),
-                        failed=result_dict.get("error"),
-                        processed=True
+                elif reddit_post_data.is_direct_image_post and not \
+                        reddit_post_data.is_gallery:
+                    # If the post is a direct image post, process the image URL
+                    img_url = eval(reddit_post_data.image_post_url)[0]
+                    error, img_process_result_dict = self.process_img_url(
+                        image_url=img_url
                     )
-                except Exception as e:
-                    result_dict["error"] = f"Error during reddit post processor: {e}"
-                process_result_dicts.append(result_dict)
+
+                result_dict["error"] = error
+                result_dict["result"] = img_process_result_dict
+
+                update_portfolio_status_in_db(
+                    db_interface=self.db_interface,
+                    post_id=reddit_post_data.post_id,
+                    is_portfolio=result_dict.get("result").get(
+                        "is_portfolio"),
+                    failed=result_dict.get("error"),
+                    processed=True
+                )
+                
+            except Exception as e:
+                result_dict["error"] = f"Error during reddit post processor: {e}"
             with open("data/mock/reddit_post_process_results.json", "w") as f:
-                json.dump(process_result_dicts, f, indent=2)
-        return process_result_dicts
+                json.dump(result_dict, f, indent=2)
+        return result_dict
 
     @staticmethod
     def extract_json_from_response(raw_response) -> dict:

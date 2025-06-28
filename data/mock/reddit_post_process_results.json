@@ -1,33 +1,31 @@
-[
-  {
-    "result": {
-      "is_portfolio": true,
-      "positions": [
-        {
-          "name": "Bitcoin",
-          "abbreviation": "BTC",
-          "amount": null,
-          "price": 650.63,
-          "currency": "USD"
-        },
-        {
-          "name": "Solana",
-          "abbreviation": "SOL",
-          "amount": null,
-          "price": 160.22,
-          "currency": "USD"
-        },
-        {
-          "name": "Ethereum",
-          "abbreviation": "ETH",
-          "amount": null,
-          "price": 115.99,
-          "currency": "USD"
-        }
-      ]
-    },
-    "error": false,
-    "source_id": "1l1oq5x",
-    "created_date": "2025-06-02T00:00:00"
-  }
-]
+{
+  "result": {
+    "is_portfolio": true,
+    "positions": [
+      {
+        "name": "Bitcoin",
+        "abbreviation": "BTC",
+        "amount": 650.63,
+        "price": 650.63,
+        "currency": "USD"
+      },
+      {
+        "name": "Solana",
+        "abbreviation": "SOL",
+        "amount": 160.22,
+        "price": 160.22,
+        "currency": "USD"
+      },
+      {
+        "name": "Ethereum",
+        "abbreviation": "ETH",
+        "amount": 115.99,
+        "price": 115.99,
+        "currency": "USD"
+      }
+    ]
+  },
+  "error": false,
+  "source_id": "1l1oq5x",
+  "created_date": "2025-06-02T00:00:00"
+}

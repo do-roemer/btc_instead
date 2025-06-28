@@ -23,7 +23,7 @@ secret_config = secrets.get_config()
 logger = set_logger(name=__name__)
 
 
-def reddit_posts_processor_pipeline(
+def reddit_posts_to_portfolio_processor_pipeline(
     reddit_id: str,
     rp_processor: RedditPostProcessor,
     portfolio_processor: PortfolioProcessor,
@@ -34,27 +34,29 @@ def reddit_posts_processor_pipeline(
     Takes a list of reddit post ids, get their data from the DB, runs
     a portfolio process on it and uploads the portfolio to the DB.
     """
-    reddit_process_results = rp_processor.process(
+    reddit_process_result = rp_processor.process(
         reddit_post_id=reddit_id
+    )
+
+    portfolio_processor.upload_reddit_post_purchase_data_to_db_pipeline(
+        reddit_post_result_dict=reddit_process_result
     )
 
     # Initialize portfolios in the database for each processed Reddit post
     if not app_config["debug"]["is_debug"]:
-        for result in reddit_process_results:
-            if result['result']["is_portfolio"]:
-                portfolio_processor.initialize_portfolio_in_db(
-                    source="reddit",
-                    source_id=result["source_id"],
-                    created_date=result["created_date"]
-                )
-    for result in reddit_process_results:
-        if result["result"]["is_portfolio"]:
-            init_asset_into_db_pipeline(
-                asset_data=result["result"]["positions"],
-                cc_fetcher=cc_fetcher,
-                asset_processor=asset_processor
+        if reddit_process_result['result']["is_portfolio"]:
+            portfolio_processor.initialize_portfolio_in_db(
+                source="reddit",
+                source_id=reddit_process_result["source_id"],
+                created_date=reddit_process_result["created_date"]
             )
-    logger.info("Initialized portfolios.")
+    if reddit_process_result["result"]["is_portfolio"]:
+        init_asset_into_db_pipeline(
+            asset_data=reddit_process_result["result"]["positions"],
+            cc_fetcher=cc_fetcher,
+            asset_processor=asset_processor
+        )
+    logger.info(f"Initialized portfolio from reddit for id: {reddit_id}.")
 
 
 def run_url_to_portfolio_evaluation_pipeline(
@@ -65,17 +67,25 @@ def run_url_to_portfolio_evaluation_pipeline(
     cc_fetcher: CryptoCurrencyFetcher,
     reddit_fetcher: RedditFetcher
 ):
-    uploaded_reddit_ids = fetch_reddit_post_and_upload_to_db_pipeline(
-        urls=urls,
-        reddit_fetcher=reddit_fetcher,
-        reddit_post_processor=rp_processor
+
+    reddit_post_id = reddit_fetcher.get_reddit_post_id_from_url(
+        url=[0]
     )
+    if not portfolio_processor.portfolio_already_exists(
+            "reddit",
+            reddit_post_id
+    ):
+        uploaded_reddit_ids = fetch_reddit_post_and_upload_to_db_pipeline(
+            urls=urls,
+            reddit_fetcher=reddit_fetcher,
+            reddit_post_processor=rp_processor
+        )
     for reddit_post_id in uploaded_reddit_ids:
         if not portfolio_processor.portfolio_already_exists(
             "reddit",
             reddit_post_id
         ):
-            reddit_posts_processor_pipeline(
+            reddit_posts_to_portfolio_processor_pipeline(
                 reddit_id=reddit_post_id,
                 rp_processor=rp_processor,
                 portfolio_processor=portfolio_processor,
@@ -95,7 +105,7 @@ def run_url_to_portfolio_evaluation_pipeline(
 def process_purchases_pipeline(
     purchases: list[Purchase],
     asset_processor: AssetProcessor,
-    cc_fetcher: CryptoCurrencyFetcher    
+    cc_fetcher: CryptoCurrencyFetcher
 ) -> list[Purchase]:
     current_date = datetime.today()
     for purchase in purchases:
@@ -194,7 +204,7 @@ def evaluate_portfolio_pipeline(
     portfolio = portfolio_processor.evaluate_portfolio(
         portfolio,
         current_btc_price,
-        past_btc_price_data
+        past_btc_price_data["price"]
         )
 
     portfolio_processor.update_portfolio_in_db(
@@ -324,44 +334,24 @@ def extract_and_save_cc_prices_of_past_year_pipeline(
 def upload_portfolio_purchases_to_db_pipeline(
         portfolio_processor: PortfolioProcessor,
         purchases: list[Purchase] = None
-):
-    if app_config["debug"]["is_debug"]:
-        with open("data/mock/reddit_post_process_results.json", "r") as f:
-            process_result_dicts = json.load(f)
-            for portfolio_data in process_result_dicts:
-                for purchase in portfolio_data['result']["positions"]:
-                    purchase_instance = portfolio_processor.create_purchase(
-                            source="reddit",
-                            source_id=portfolio_data["source_id"],
-                            name=purchase["name"],
-                            abbreviation=purchase["abbreviation"],
-                            amount=purchase["amount"],
-                            total_purchase_value=purchase["price"],
-                            purchase_date=portfolio_data['created_date']
-                            .split("T")[0],
-                            currency=purchase.get("currency", "usd"),
-                        )
-                    portfolio_processor.purchase_to_db(
-                        purchase_instance
-                    )
-    else:
-        if purchases is None:
-            logger.error("No purchases provided to upload to the database.")
-            return
-        for purchase in purchases:
-            purchase_instance = portfolio_processor.create_purchase(
-                source=purchase["source"],
-                source_id=purchase["source_id"],
-                name=purchase["name"],
-                abbreviation=purchase["abbreviation"],
-                amount=purchase["amount"],
-                total_purchase_value=purchase["total_purchase_value"],
-                purchase_date=purchase["purchase_date"],
-                currency=purchase.get("currency", "usd"),
-            )
-            portfolio_processor.purchase_to_db(
-                purchase_instance
-            )
+) -> None:
+    if purchases is None:
+        logger.error("No purchases provided to upload to the database.")
+        return
+    for purchase in purchases:
+        purchase_instance = portfolio_processor.create_purchase(
+            source=purchase["source"],
+            source_id=purchase["source_id"],
+            name=purchase["name"],
+            abbreviation=purchase["abbreviation"],
+            amount=purchase["amount"],
+            total_purchase_value=purchase["total_purchase_value"],
+            purchase_date=purchase["purchase_date"],
+            currency=purchase.get("currency", "usd"),
+        )
+        portfolio_processor.purchase_to_db(
+            purchase_instance
+        )
 
 
 def init_asset_into_db_pipeline(
@@ -439,9 +429,21 @@ def fetch_reddit_posts_from_url_pipeline(
     """
     Fetch Reddit posts by urls and process them.
     """
-    results = reddit_fetcher.fetch_posts_by_post_url(
-        urls=urls
-    )
+    results = []
+    for url in urls:
+        if not url.startswith("https://www.reddit.com/"):
+            logger.error(
+                f"Invalid Reddit URL: {url}. "
+                "URLs must start with 'https://www.reddit.com/'."
+            )
+            return []
+        result = reddit_fetcher.fetch_posts_by_post_url(
+            url=url
+        )
+        if not result:
+            logger.warning(f"No posts found for URL: {url}")
+            continue
+        results.extend(result)
     logger.info(f"Fetched {len(results)} posts from URLs: {urls}")
     logger.info("Results:", results[0])
     return results
@@ -454,10 +456,13 @@ def fetch_reddit_post_and_upload_to_db_pipeline(
 ) -> list[str]:
     """Takes reddit urls, fetches their date, uploads their info and returns
     a list of the fetched and uploaded reddit posts"""
-    results = reddit_fetcher.fetch_posts_by_post_url(
-        urls=urls
-    )
-    reddit_post_processor.upload_reddit_post_to_db(
-        reddit_post_data_dicts=results
-    )
+    results = []
+    for url in urls:
+        results.append(reddit_fetcher.fetch_posts_by_post_url(
+            url=url
+        ))
+    for result in results:
+        reddit_post_processor.upload_reddit_post_to_db(
+            reddit_post_data_dict=result
+        )
     return [result["post_id"] for result in results]

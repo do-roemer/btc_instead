@@ -26,7 +26,7 @@ INSERT_REDDIT_POST_UPDATE_TEMPLATE = """
             image_post_url = VALUES(image_post_url)
         """
 
-UPDATE_PORTFOLIO_STATUS_OF_POST = """
+UPDATE_PORTFOLIO_STATUS_OF_POST_TEMPLATE = """
         UPDATE {table_name} SET
             processed = %s,
             is_portfolio = %s,

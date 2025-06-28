@@ -117,6 +117,37 @@ class RedditPost():
             failed=row[25] if row[25] else False
         )
 
+    def to_dict(self):
+        """Converts the RedditPost instance to a dictionary."""
+        return {
+            "post_id": self.post_id,
+            "title": self.title,
+            "username": self.username,
+            "created_utc": self.created_utc,
+            "created_date": self.created_date,
+            "score": self.score,
+            "upvote_ratio": self.upvote_ratio,
+            "num_comments": self.num_comments,
+            "permalink": self.permalink,
+            "user_url": self.user_url,
+            "subreddit": self.subreddit,
+            "post_text": self.post_text,
+            "is_self": self.is_self,
+            "stickied": self.stickied,
+            "spoiler": self.spoiler,
+            "locked": self.locked,
+            "is_gallery": self.is_gallery,
+            "gallery_image_urls": self.gallery_image_urls,
+            "is_direct_image_post": self.is_direct_image_post,
+            "image_post_url": self.image_post_url,
+            "flair_text": self.flair_text,
+            "inline_images_in_text": self.inline_images_in_text,
+            "markdown_image_urls": self.markdown_image_urls,
+            "processed": self.processed,
+            "is_portfolio": self.is_portfolio,
+            "failed": self.failed
+        }
+    
     def __str__(self):
         return f"""
         Post ID: {self.post_id},

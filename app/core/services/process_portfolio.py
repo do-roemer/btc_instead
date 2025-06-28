@@ -1,5 +1,7 @@
 from datetime import datetime
 
+
+from app.core.entities.reddit_post import RedditPost
 from app.core.utils.utils import set_logger
 from app.core.fetcher.fiat_exchange import (
     get_historical_exchange_rate_for_usd
@@ -52,6 +54,32 @@ class PortfolioProcessor:
         return portfolio_already_exists(
             self.db_interface, source=source, source_id=source_id
         )
+
+    def upload_reddit_post_purchase_data_to_db_pipeline(
+        self,
+        reddit_post_result_dict: dict
+    ) -> None:
+        """
+        Upload purchase data to the database.
+        """
+        if not reddit_post_result_dict:
+            logger.error("No purchase data provided to upload to the database.")
+            return
+        for purchase in reddit_post_result_dict["result"].get("positions", []):
+            purchase_instance = self.create_purchase(
+                    source="reddit",
+                    source_id=reddit_post_result_dict["source_id"],
+                    name=purchase["name"],
+                    abbreviation=purchase["abbreviation"],
+                    amount=purchase["amount"],
+                    total_purchase_value=purchase["price"],
+                    purchase_date=reddit_post_result_dict['created_date'].split("T")[0],
+                    currency=purchase.get("currency", "usd"),
+                )
+            self.purchase_to_db(
+                purchase_instance
+            )
+
 
     def initialize_portfolio_in_db(
         self,
