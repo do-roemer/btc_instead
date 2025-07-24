@@ -1,4 +1,4 @@
-from app.core.pipelines.local_pipelines import (
+from app.core.pipelines.pipelines import (
     fetch_and_upload_weeklsy_crypto_prices_to_db_pipeline
 )
 import app.core.secret_handler as secrets

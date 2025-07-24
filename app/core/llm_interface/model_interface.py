@@ -69,8 +69,7 @@ class GeminiProText():
         """
         self.api_key = api_key
         self.model_name = 'gemini-1.5-flash'
-        genai.configure(api_key=self.api_key)
-        self.client = genai.GenerativeModel(self.model_name) 
+        self.client = genai.GenerativeModel(self.model_name)
 
     def get_response(
             self,

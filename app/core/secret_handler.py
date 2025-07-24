@@ -33,23 +33,21 @@ def _load_config_from_env():
     """Loads configuration from a .env file for local execution."""
     logger.info("Attempting to load configuration from .env file...")
 
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    dotenv_path = os.path.join(current_dir, '.env')
+    # Try to load .env from current working directory
+    dotenv_path = os.path.join(os.getcwd(), '.env')
+    logger.info("Looking for .env file at: %s", dotenv_path)
 
     if not os.path.exists(dotenv_path):
         logger.warning(
-            f""".env file not found at {dotenv_path}.
-            Relying on environment variables.""")
-        load_dotenv(dotenv_path=dotenv_path, override=False) 
+            f".env file not found at {dotenv_path}. Trying default load_dotenv()...")
+        loaded = load_dotenv(override=True)  # fallback: let dotenv search automatically
     else:
         loaded = load_dotenv(dotenv_path=dotenv_path, override=True)
-        if loaded:
-            logger.info(
-                f".env file loaded successfully from {dotenv_path}")
-        else:
-            logger.warning(
-                f"""Could not load .env file from 
-                {dotenv_path}, though it exists.""")
+
+    if loaded:
+        logger.info(f".env file loaded successfully.")
+    else:
+        logger.warning(f"Could not load .env file from {dotenv_path}.")
 
     config = {}
     missing_secrets = []
@@ -62,8 +60,7 @@ def _load_config_from_env():
 
     if missing_secrets:
         logger.error(
-            f"""Missing required secrets from .env/environment:
-            {', '.join(missing_secrets)}""")
+            f"Missing required secrets from .env/environment: {', '.join(missing_secrets)}")
 
     logger.info("Local configuration processed.")
     return config

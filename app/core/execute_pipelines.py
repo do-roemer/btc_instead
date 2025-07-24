@@ -5,7 +5,7 @@ from app.core.services.process_asset import AssetProcessor
 from app.core.fetcher.reddit import RedditFetcher
 from app.core.services.process_portfolio import PortfolioProcessor
 from app.core.fetcher.crypto_currency import CryptoCurrencyFetcher
-from app.core.pipelines.local_pipelines import (
+from app.core.pipelines.pipelines import (
     run_url_to_portfolio_evaluation_pipeline,
     fetch_and_upload_weeklsy_crypto_prices_to_db_pipeline,
     upload_portfolio_purchases_to_db_pipeline,

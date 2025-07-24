@@ -1,4 +1,3 @@
-import json
 from datetime import timedelta
 from datetime import datetime
 import time
@@ -31,7 +30,7 @@ def reddit_posts_to_portfolio_processor_pipeline(
     cc_fetcher: CryptoCurrencyFetcher
 ):
     """
-    Takes a list of reddit post ids, get their data from the DB, runs
+    Takes a reddit post id, get its data from the DB, runs
     a portfolio process on it and uploads the portfolio to the DB.
     """
     reddit_process_result = rp_processor.process(
@@ -60,14 +59,15 @@ def reddit_posts_to_portfolio_processor_pipeline(
 
 
 def run_url_to_portfolio_evaluation_pipeline(
-    urls: list[str],
+    url: str,
     rp_processor: RedditPostProcessor,
     portfolio_processor: PortfolioProcessor,
     asset_processor:  AssetProcessor,
     cc_fetcher: CryptoCurrencyFetcher,
     reddit_fetcher: RedditFetcher
 ):
-
+    "Start with a reddit url, fetch the post, upload it to the db and"
+    "evaluate the portfolio based on the post."
     reddit_post_id = reddit_fetcher.get_reddit_post_id_from_url(
         url=[0]
     )
@@ -75,18 +75,18 @@ def run_url_to_portfolio_evaluation_pipeline(
             "reddit",
             reddit_post_id
     ):
-        uploaded_reddit_ids = fetch_reddit_post_and_upload_to_db_pipeline(
-            urls=urls,
+        uploaded_reddit_id = fetch_reddit_post_and_upload_to_db_pipeline(
+            url=url,
             reddit_fetcher=reddit_fetcher,
             reddit_post_processor=rp_processor
         )
-    for reddit_post_id in uploaded_reddit_ids:
+
         if not portfolio_processor.portfolio_already_exists(
             "reddit",
-            reddit_post_id
+            uploaded_reddit_id
         ):
             reddit_posts_to_portfolio_processor_pipeline(
-                reddit_id=reddit_post_id,
+                reddit_id=uploaded_reddit_id,
                 rp_processor=rp_processor,
                 portfolio_processor=portfolio_processor,
                 asset_processor=asset_processor,
@@ -95,7 +95,7 @@ def run_url_to_portfolio_evaluation_pipeline(
 
         evaluate_portfolio_pipeline(
             source="reddit",
-            source_id=reddit_post_id,
+            source_id=uploaded_reddit_id,
             portfolio_processor=portfolio_processor,
             cc_fetcher=cc_fetcher,
             asset_processor=asset_processor
@@ -450,19 +450,18 @@ def fetch_reddit_posts_from_url_pipeline(
 
 
 def fetch_reddit_post_and_upload_to_db_pipeline(
-        urls: list[str],
+        url: str,
         reddit_fetcher: RedditFetcher,
         reddit_post_processor: RedditPostProcessor
-) -> list[str]:
-    """Takes reddit urls, fetches their date, uploads their info and returns
-    a list of the fetched and uploaded reddit posts"""
-    results = []
-    for url in urls:
-        results.append(reddit_fetcher.fetch_posts_by_post_url(
-            url=url
-        ))
-    for result in results:
+) -> str:
+    """Takes a reddit url, fetches its data, uploads its info and returns
+    the fetched and uploaded reddit post id"""
+
+    result = reddit_fetcher.fetch_posts_by_post_url(
+        url=url
+    )
+    if result:
         reddit_post_processor.upload_reddit_post_to_db(
             reddit_post_data_dict=result
         )
-    return [result["post_id"] for result in results]
+    return result["post_id"]

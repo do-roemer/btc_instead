@@ -5,27 +5,20 @@
       {
         "name": "Bitcoin",
         "abbreviation": "BTC",
-        "amount": 650.63,
-        "price": 650.63,
-        "currency": "USD"
+        "amount": 0.00693512,
+        "price": 709.14,
+        "currency": "\u20ac"
       },
       {
         "name": "Solana",
         "abbreviation": "SOL",
-        "amount": 160.22,
-        "price": 160.22,
-        "currency": "USD"
-      },
-      {
-        "name": "Ethereum",
-        "abbreviation": "ETH",
-        "amount": 115.99,
-        "price": 115.99,
-        "currency": "USD"
+        "amount": 2.32994582,
+        "price": 401.4,
+        "currency": "\u20ac"
       }
     ]
   },
   "error": false,
-  "source_id": "1l1oq5x",
-  "created_date": "2025-06-02T00:00:00"
+  "source_id": "1m79wzm",
+  "created_date": "2025-07-23T00:00:00"
 }

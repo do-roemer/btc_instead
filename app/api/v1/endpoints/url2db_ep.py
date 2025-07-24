@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException, status, Body, Depends
 from app.core.utils.utils import set_logger
 from app.api.models import PipelineRequest, PipelineResponse
 from app.core.pipelines.api_pipelines import (
-    redditpost2db_pipeline
+    redditpost_url2db_pipeline
 )
 from app.api.dependencies import (
     get_db,
@@ -24,7 +24,7 @@ router = APIRouter()
     summary="Take reddit post url  and upload the post into db",
     tags=["Pipeline Operations"]
 )
-async def run_pipeline_on_url(
+async def run_redditpost_url2db_pipeline(
     payload: PipelineRequest = Body(...),
     db: DatabaseInterface = Depends(get_db),
     fetcher: RedditFetcher = Depends(get_reddit_fetcher)
@@ -39,7 +39,7 @@ async def run_pipeline_on_url(
     try:
         print(f"API: Received request to process URL: {payload.url}")
         # Pass parameters to your core pipeline function as needed
-        pipeline_result = await redditpost2db_pipeline(
+        pipeline_result = await redditpost_url2db_pipeline(
             url=str(payload.url),
             db_interface=db,
             reddit_fetcher=fetcher
@@ -58,7 +58,7 @@ async def run_pipeline_on_url(
         )
     except Exception as e:
         # Catch any other unexpected errors
-        logging.error(f"API: Unexpected error during pipeline execution: {e}")
+        logger.error(f"API: Unexpected error during pipeline execution: {e}")
         
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

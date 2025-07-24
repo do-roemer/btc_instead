@@ -45,6 +45,44 @@ class RedditPostProcessor:
             api_key=secret_config.get("GOOGLE_API_KEY")
         )
 
+    def reddit_post_processed(
+        self,
+        reddit_post_id: str,
+    ) -> bool:
+        """
+        Check if a Reddit post has been processed.
+        Args:
+            reddit_post_id (str): The ID of the Reddit post.
+        Returns:
+            bool: True if the post has been processed, False otherwise.
+        """
+        posts = get_reddit_posts(
+            db_interface=self.db_interface,
+            post_ids=[reddit_post_id]
+        )
+        if not posts:
+            return False
+        return True if posts[0].processed else False
+
+    def reddit_post_is_portfolio(
+            self,
+            reddit_post_id: str
+    ) -> bool:
+        """
+        Check if a Reddit post is considered a portfolio.
+        Args:
+            reddit_post_id (str): The ID of the Reddit post.
+        Returns:
+            bool: True if the post is a portfolio, False otherwise.
+        """
+        posts = get_reddit_posts(
+            db_interface=self.db_interface,
+            post_ids=[reddit_post_id]
+        )
+        if not posts:
+            return False
+        return True if posts[0].is_portfolio else False
+
     def read_image_from_url(
             self,
             image_url: str

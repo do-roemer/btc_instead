@@ -1,13 +1,11 @@
 import json
 
 from app.core.utils.utils import set_logger
-from app.core.app_config import get_config
 from app.core.entities.reddit_post import RedditPost
 from app.core.database.queries import (
     INSERT_REDDIT_POST_UPDATE_TEMPLATE,
     UPDATE_PORTFOLIO_STATUS_OF_POST_TEMPLATE
 )
-app_config = get_config()
 logger = set_logger(name=__name__)
 
 
