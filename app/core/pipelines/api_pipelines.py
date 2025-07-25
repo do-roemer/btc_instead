@@ -23,8 +23,9 @@ async def redditpost_url_evaluation_pipeline(
     portfolio_processor: PortfolioProcessor,
     asset_processor:  AssetProcessor,
     cc_fetcher: CryptoCurrencyFetcher,
-    reddit_fetcher: RedditFetcher
-):
+    reddit_fetcher: RedditFetcher,
+    overwrite: bool = False
+) -> dict:
     "Start with a reddit url, fetch the post, upload it to the db and"
     "evaluate the portfolio based on the post."
 
@@ -33,7 +34,8 @@ async def redditpost_url_evaluation_pipeline(
     )
     if not rp_processor.reddit_post_processed(reddit_post_id=reddit_post_id) \
             and not rp_processor.reddit_post_is_portfolio(
-                reddit_post_id=reddit_post_id):
+                reddit_post_id=reddit_post_id) \
+            or overwrite:
         if not portfolio_processor.portfolio_already_exists(
                 "reddit",
                 reddit_post_id
@@ -43,19 +45,16 @@ async def redditpost_url_evaluation_pipeline(
                 reddit_fetcher=reddit_fetcher,
                 reddit_post_processor=rp_processor
             )
-
-        if not portfolio_processor.portfolio_already_exists(
-            "reddit",
-            uploaded_reddit_id
-        ):
-            reddit_posts_to_portfolio_processor_pipeline(
-                reddit_id=uploaded_reddit_id,
-                rp_processor=rp_processor,
-                portfolio_processor=portfolio_processor,
-                asset_processor=asset_processor,
-                cc_fetcher=cc_fetcher
-            )
-            processed_reddit_post_id = uploaded_reddit_id     
+        else:
+            uploaded_reddit_id = reddit_post_id
+        reddit_posts_to_portfolio_processor_pipeline(
+            reddit_id=uploaded_reddit_id,
+            rp_processor=rp_processor,
+            portfolio_processor=portfolio_processor,
+            asset_processor=asset_processor,
+            cc_fetcher=cc_fetcher
+        )
+        processed_reddit_post_id = uploaded_reddit_id     
     else:
         logger.info(
             f"Reddit post with ID {reddit_post_id} has already been processed."
@@ -64,18 +63,22 @@ async def redditpost_url_evaluation_pipeline(
 
     if rp_processor.reddit_post_is_portfolio(
                 reddit_post_id=processed_reddit_post_id):
-        evaluate_portfolio_pipeline(
+        portfolio = evaluate_portfolio_pipeline(
             source="reddit",
             source_id=processed_reddit_post_id,
             portfolio_processor=portfolio_processor,
             cc_fetcher=cc_fetcher,
             asset_processor=asset_processor
         )
+        result_dict = portfolio.get_portfolio_as_dict()
+        result_dict["failed"] = False
+        return result_dict
     else:
         logger.info(
             f"""Reddit post with ID {processed_reddit_post_id}
             is not a portfolio."""
         )
+        return {"failed": True}
 
 
 async def redditpost_url2db_pipeline(

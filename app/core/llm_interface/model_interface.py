@@ -73,20 +73,25 @@ class GeminiProText():
 
     def get_response(
             self,
-            prompt_text: str
+            prompt_text: str,
+            config: dict = None
             ):
         """
         Get a response from the Gemini Pro Vision model.
         
         Args:
             prompt_text (str): The text prompt to send to the model.
-        
+            config (dict, optional): Additional configuration options for the request.
+
         Returns:
             str: The response from the model.
         """
         try:
             input_parts = [prompt_text]
-            response = self.client.generate_content(input_parts)
+            response = self.client.generate_content(
+                input_parts,
+                generation_config=config
+            )
         except Exception as e:
             logging.error(f"google.generativeai API error: {e}")
             return None

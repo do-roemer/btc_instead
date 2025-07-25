@@ -162,7 +162,7 @@ class RedditPostProcessor:
         error = False
         process_result_dict = {
             "is_portfolio": False,
-            "positions": [],
+            "purchases": [],
         }
         assets_list = []
         for img_url in image_urls:
@@ -180,11 +180,11 @@ class RedditPostProcessor:
                     logger.info(
                         f"""Successfully processed image URL {img_url}""")
                     assets_list.extend(
-                        curr_result_dict["positions"]
+                        curr_result_dict["purchases"]
                     )
         process_result_dict["is_portfolio"] = True if len(assets_list) \
             > 0 else False
-        process_result_dict["positions"] = assets_list
+        process_result_dict["purchases"] = assets_list
         return error, process_result_dict
 
     def process_img_url(
@@ -237,7 +237,7 @@ class RedditPostProcessor:
             with open("data/mock/reddit_post_process_results.json", "r") as f:
                 result_dict = json.load(f)
         else:
-            
+
             logger.info(
                 f"""Processing {reddit_post_id}"""
             )
@@ -277,9 +277,10 @@ class RedditPostProcessor:
                     failed=result_dict.get("error"),
                     processed=True
                 )
-                
+
             except Exception as e:
-                result_dict["error"] = f"Error during reddit post processor: {e}"
+                result_dict["error"] = \
+                    f"Error during reddit post processor: {e}"
             with open("data/mock/reddit_post_process_results.json", "w") as f:
                 json.dump(result_dict, f, indent=2)
         return result_dict
@@ -328,5 +329,57 @@ class RedditPostProcessor:
         prompt = IMAGE_PORTFOLIO_REASONING_PROMPT.format(
                 vision_model_response=vision_model_response
         )
-        text_response = self.reasoning_model.get_response(prompt)
+        text_response = self.reasoning_model.get_response(
+            prompt,
+            config={
+                "response_schema": self.get_interpret_post_response_format(),
+                "response_mime_type": "application/json",
+            })
         return text_response
+
+    @staticmethod
+    def get_interpret_post_response_format() -> dict:
+        return {
+            "type": "object",
+            "properties": {
+                "is_portfolio": {
+                    "type": "boolean",
+                    "description":
+                        "Indicates if the post is part of a portfolio."
+                },
+                "purchases": {
+                    "type": "array",
+                    "description": "List of purchases made in the portfolio.",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "Name of the crypto currency."
+                            },
+                            "abbreviation": {
+                                "type": "string",
+                                "description":
+                                    "Abbreviation of the crypto currency."
+                            },
+                            "amount": {
+                                "type": "number",
+                                "description":
+                                    "Amount of the crypto currency."
+                            },
+                            "price": {
+                                "type": "number",
+                                "description":
+                                    "Price of the crypto currency."
+                            },
+                            "currency": {
+                                "type": "string",
+                                "description":
+                                    """Currency of the price like USD,
+                                    EUR, CAD, etc."""
+                            }
+                        }
+                    }
+                }
+            }
+        }

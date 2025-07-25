@@ -58,19 +58,29 @@ async def run_reddit_url_evaluation_pipeline(
             portfolio_processor=portfolio_processor,
             asset_processor=asset_processor,
             cc_fetcher=cc_fetcher,
-            reddit_fetcher=reddit_fetcher
+            reddit_fetcher=reddit_fetcher,
+            overwrite=payload.custom_parameter.get("overwrite", False)
         )
 
-        logger.info(
-            "API: Successfully completed Reddit URL evaluation for:"
-            f"{payload.url}"
-        )
-
-        return PipelineResponse(
-            status="success",
-            message="Reddit URL evaluation pipeline executed successfully.",
-            result=pipeline_result
-        )
+        if pipeline_result["failed"]:
+            logger.warning(
+                f"API: Evaluation failed for Reddit URL: {payload.url}"
+            )
+            return PipelineResponse(
+                status="failed",
+                message="Reddit URL evaluation failed.",
+                result=pipeline_result
+            )
+        else:
+            logger.info(
+                "API: Successfully completed Reddit URL evaluation for:"
+                f"{payload.url}"
+            )
+            return PipelineResponse(
+                status="success",
+                message="Reddit URL evaluation pipeline executed successfully.",
+                result=pipeline_result
+            )
 
     except ValueError as ve:
         # Handle specific validation errors from the pipeline

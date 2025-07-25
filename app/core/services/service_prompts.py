@@ -1,16 +1,26 @@
 INTERPRET_IMAGE_FROM_REDDIT_POST = \
     """"
-    Look at this image coming from a crypto currency contet
-    and describe what is shown on the picture.
-    Watch out if there are any crypto currencies like
-    Bitcoin(BTC), Ethereum(ETH), Solana(SOL) mentioned in
-    the image with their amount and maybe the price and the
-    price currency abbreviation (USD, EUR, CAD, etc.) and list them.
+    You are an expert in extracting Crypto Currency information from images.
 
+    Your goal is to extract all price relevant information about
+    crypto currencies like Bitcoin(BTC), Ethereum(ETH),
+    Solana(SOL) from the image and list them. Relevant information is their
+    amount and maybe the price and the price currency abbreviation
+    (USD, EUR, CAD, etc.).
 
+    Follow these steps:
+    1. Describe what you see in the image.
+    2. Identify the crypto currencies mentioned in the image.
+    3. Identify the amount of each crypto currency and additional information
+    related to the currency.
+    4. Write your findings from step 1 to 3 into description in the output.
+    5. Provide the list of crypto currencies in the required format.
 
-    Requirements! Provide your solution like the following:
-    Decription: <description>
+    Requirements:
+    1. Ensure that you covered all mentioned crypto currencies. Even if
+    you might know the crypto currency, you have to extract it from the image.
+    2. Provide your solution like in the following pattern:
+    Description: <description>
     List of Crypto Currencies:
     - <Crypto Currency name>|<Crypto Currency abbreviation>|<amount>|<price>|<price currency>
     - <Crypto Currency name>|<Crypto Currency abbreviation>|<amount>|<price>|<price currency>
@@ -33,10 +43,10 @@ IMAGE_PORTFOLIO_REASONING_PROMPT = \
     describing a Crypto Portfolio and the possible shared list of crypto
     currencies are the holdings of that portfolio.
     The information of each element of the list is structured like this:
-        <Crypto Currency name>|<Crypto Currency abbreviation>|<amount>|<price>|<price currency>
+        <crypto currency name>|<crypto currency abbreviation>|<amount>|<price>|<price currency>
     In which:
-        - <Crypto Currency name> is the name of the crypto currency
-        - <Crypto Currency abbreviation> is the abbreviation of the crypto currency
+        - <crypto currency name> is the name of the crypto currency
+        - <crypto currency abbreviation> is the abbreviation of the crypto currency
         - <amount> is the amount of the crypto currency
         - <price> is the price of the crypto currency in float number
         - <price currency> is the currency of the price like USD, EUR, CAD, etc.
@@ -54,20 +64,20 @@ IMAGE_PORTFOLIO_REASONING_PROMPT = \
             'is_portfolio': True or False
         }},
         {{
-            'positions':[
+            'purchases':[
                 {{
-                    {{  'name': 'Crypto Currency name',
-                        'abbreviation': abbreviation,
-                        'amount': the shared amount,
-                        'price': the shared price,
-                        'currency': price currency 
+                    {{  'name': <crypto currency name>,
+                        'abbreviation': <crypto currency abbreviation>,
+                        'amount': <amount>,
+                        'price': <price>,
+                        'currency': <price currency>
                     }},
                     {{
-                        'name': 'Crypto Currency name',
-                        'abbreviation': abbreviation,
-                        'amount': the shared amount,
-                        'price': the shared price,
-                        'currency': price currency
+                        'name': <crypto currency name>,
+                        'abbreviation': <crypto currency abbreviation>,
+                        'amount': <amount>,
+                        'price': <price>,
+                        'currency': <price currency>
                     }}
                 }}
             ]

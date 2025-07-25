@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BTC Instead - Portfolio Analyzer</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🪙 BTC Instead</h1>
+            <p>Analyze Reddit portfolio posts and compare them to BTC performance</p>
+        </header>
+
+        <main>
+            <form id="urlForm" class="url-form">
+                <div class="form-group">
+                    <label for="redditUrl">Reddit Post URL:</label>
+                    <input 
+                        type="url" 
+                        id="redditUrl" 
+                        name="redditUrl" 
+                        placeholder="https://www.reddit.com/r/WallStreetBetsCrypto/comments/..." 
+                        required
+                    >
+                </div>
+                
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="overwrite" name="overwrite">
+                        Force reprocess (overwrite existing data)
+                    </label>
+                </div>
+
+                <button type="submit" id="submitBtn">Analyze Portfolio</button>
+            </form>
+
+            <div id="loading" class="loading hidden">
+                <div class="spinner"></div>
+                <p>Processing Reddit post and analyzing portfolio...</p>
+            </div>
+
+            <div id="results" class="results hidden">
+                <h2>Analysis Results</h2>
+                <div id="resultContent"></div>
+            </div>
+
+            <div id="error" class="error hidden">
+                <h3>Error</h3>
+                <p id="errorMessage"></p>
+            </div>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

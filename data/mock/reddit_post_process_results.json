@@ -1,20 +1,48 @@
 {
   "result": {
     "is_portfolio": true,
-    "positions": [
+    "purchases": [
       {
-        "name": "Bitcoin",
-        "abbreviation": "BTC",
-        "amount": 0.00693512,
-        "price": 709.14,
-        "currency": "\u20ac"
+        "abbreviation": "ZBCN",
+        "amount": 320857.70911007,
+        "currency": "\u20ac",
+        "name": "Zebec Network",
+        "price": 1185.49
       },
       {
-        "name": "Solana",
+        "abbreviation": "PI",
+        "amount": 1800.62469001,
+        "currency": "\u20ac",
+        "name": "Pi",
+        "price": 746.93
+      },
+      {
+        "abbreviation": "BTC",
+        "amount": 0.00693512,
+        "currency": "\u20ac",
+        "name": "Bitcoin",
+        "price": 709.14
+      },
+      {
+        "abbreviation": "XRP",
+        "amount": 229.07493663,
+        "currency": "\u20ac",
+        "name": "XRP",
+        "price": 690.77
+      },
+      {
         "abbreviation": "SOL",
         "amount": 2.32994582,
-        "price": 401.4,
-        "currency": "\u20ac"
+        "currency": "\u20ac",
+        "name": "Solana",
+        "price": 401.4
+      },
+      {
+        "abbreviation": "KAS",
+        "amount": 3891.84914466,
+        "currency": "\u20ac",
+        "name": "Kaspa",
+        "price": 372.89
       }
     ]
   },

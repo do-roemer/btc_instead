@@ -1,0 +1,2 @@
+- write a pipeline to delete all data related to a reddit url
+- check purchase creation -> not all purchases are found for https://www.reddit.com/r/WallStreetBetsCrypto/comments/1m79wzm/started_investing_in_february_what_do_you_guys/

@@ -2,6 +2,7 @@ from datetime import timedelta
 from datetime import datetime
 import time
 
+from app.core.entities.portfolio import Portfolio
 from app.core.utils.utils import set_logger
 import app.core.secret_handler as secrets
 from app.core.services.process_reddit_posts import RedditPostProcessor
@@ -51,7 +52,7 @@ def reddit_posts_to_portfolio_processor_pipeline(
             )
     if reddit_process_result["result"]["is_portfolio"]:
         init_asset_into_db_pipeline(
-            asset_data=reddit_process_result["result"]["positions"],
+            asset_data=reddit_process_result["result"]["purchases"],
             cc_fetcher=cc_fetcher,
             asset_processor=asset_processor
         )
@@ -146,16 +147,16 @@ def process_purchases_pipeline(
                 currency=current_value_dict.get("currency", "usd")
             )
             current_asset_price = current_value_dict["price"]
-            if current_asset_price is None:
-                logger.warning(
-                    f"Can't fetch current {purchase.name} price."
-                    " Abort pipeline."
-                )
-                return None
-            purchase.update_values(
-                current_value=current_asset_price
+        if current_asset_price is None:
+            logger.warning(
+                f"Can't fetch current {purchase.name} price."
+                " Abort pipeline."
             )
-        return purchases
+            return None
+        purchase.update_values(
+            current_value=current_asset_price
+        )
+    return purchases
 
 
 def evaluate_portfolio_pipeline(
@@ -164,7 +165,7 @@ def evaluate_portfolio_pipeline(
     portfolio_processor: PortfolioProcessor,
     cc_fetcher: CryptoCurrencyFetcher,
     asset_processor: AssetProcessor
-):
+) -> Portfolio:
     """
     Evaluate portfolios based on source IDs.
     """

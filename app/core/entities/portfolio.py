@@ -113,11 +113,11 @@ class Portfolio():
             diff = your_val - btci_val
 
             sign = "+" if diff >= 0 else ""
-            
+  
             your_val_str = format_value(your_val, v_type)
             btci_val_str = format_value(btci_val, v_type)
             diff_str = f"{sign}{format_value(diff, v_type)}"
-            
+
             lines.append(f"{name:<22} | {your_val_str:<18} | {btci_val_str:<18} | {diff_str}")
 
         # --- 2. Build the overview of other values ---
@@ -126,7 +126,6 @@ class Portfolio():
             "--- Additional Information ---",
             "-" * 30
         ])
-        
         # Access attributes directly or with getattr
         overview_items = {
             "Total Investment": format_value(
@@ -138,10 +137,8 @@ class Portfolio():
             "Created Date": getattr(self, "created_date", "N/A"),
             "Last Updated": getattr(self, "updated_date", "N/A")
         }
-        
         for key, value in overview_items.items():
             if isinstance(value, datetime):
                 value = value.strftime('%Y-%m-%d %H:%M:%S')
             lines.append(f"{key:<22}: {value}")
-            
         return "\n".join(lines)

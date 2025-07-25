@@ -65,7 +65,7 @@ class PortfolioProcessor:
         if not reddit_post_result_dict:
             logger.error("No purchase data provided to upload to the database.")
             return
-        for purchase in reddit_post_result_dict["result"].get("positions", []):
+        for purchase in reddit_post_result_dict["result"].get("purchases", []):
             purchase_instance = self.create_purchase(
                     source="reddit",
                     source_id=reddit_post_result_dict["source_id"],
@@ -79,7 +79,6 @@ class PortfolioProcessor:
             self.purchase_to_db(
                 purchase_instance
             )
-
 
     def initialize_portfolio_in_db(
         self,
